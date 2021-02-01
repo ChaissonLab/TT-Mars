@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 
 
 # %%
-#constant
+#constants
 
 interval = 500
 output_dir = "../output/naive_caller_0810_v1/"
