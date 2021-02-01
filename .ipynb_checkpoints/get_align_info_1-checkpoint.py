@@ -1,3 +1,23 @@
+#0916
+#Updates: 4.1
+#1. Change the 3rd key in dict;
+#2. Add alignment: currently does not consider aggregate alignment (this version ins or del frag on ref)
+
+#0910 v3.0
+#1. ins added
+#1.1 sv_len taken without abs();
+#1.2 rela length only;
+
+#0826 v3.0
+#add ins
+
+#0819 v2.2
+#Fixed sv_len: from aggregate interval length to ins-del;
+
+#0817 v2.1
+#Bugs
+#1. do NOT allow one ref pos have multiple pos on query contigs now!!! Cause problems like query start = query end
+
 # %%
 #This file uses liftover results: bedfiles ../../data_files/hg19/lo_pos_assem1_withSed_result.bed and ../../data_files/hg19/lo_pos_assem2_withSed_result.bed,
 #to do alignment before and after SV.
