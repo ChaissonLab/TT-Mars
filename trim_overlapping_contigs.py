@@ -23,7 +23,6 @@ else:
 
 
 
-
 #sort contigs by length from short to long
 def mergesort_contigs(unsorted_list):
     if len(unsorted_list) > 1:
