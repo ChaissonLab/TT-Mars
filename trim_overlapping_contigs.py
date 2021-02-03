@@ -31,11 +31,6 @@ if if_hg38_str == "True":
 else:
     if_hg38 = False
 
-#test
-print(outfile_name)
-print(output_dir + "/" + outfile_name)
-quit()
-
 #sort contigs by length from short to long
 def mergesort_contigs(unsorted_list):
     if len(unsorted_list) > 1:
