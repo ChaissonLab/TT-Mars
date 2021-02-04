@@ -1,6 +1,4 @@
 # %%
-#This file uses liftover results: bedfiles ../../data_files/hg19/lo_pos_assem1_withSed_result.bed and ../../data_files/hg19/lo_pos_assem2_withSed_result.bed,
-#to do alignment before and after SV.
 #Results: 
 # SV_index SV_type
 # score_before_sv_assem1 score_after_sv_assem1 score_before_sv_assem2 score_after_sv_assem2
@@ -29,7 +27,7 @@ import sys
   
 #get command line input
 #n = len(sys.argv)
-output_dir = sys.argv[1]
+output_dir = sys.argv[1] + "/"
 vcf_file = sys.argv[2]
 bam_file1 = sys.argv[3]
 bam_file2 = sys.argv[4]
@@ -48,7 +46,6 @@ interval = 20
 #Will be modified
 
 #function to get seq record from a fasta file
-#TODO: slow
 #seq_name: string, file_name:string with suffix
 def getSeqRec(seq_name, file_name):
     #fasta_file = SeqIO.parse(file_name, "fasta")
@@ -279,7 +276,6 @@ for record in DEL_calls_hg37_pos:
 
 #TODO: filter out centromere cases
 
-#f = pysam.VariantFile('../../../callset_files/simulation/truvari_data_PASS_chr1_to_chr2.vcf.gz','r')
 f = pysam.VariantFile(vcf_file,'r')
 
 #dict1/dict2

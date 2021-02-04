@@ -20,9 +20,9 @@ outfile_name_wo_ext = os.path.splitext(infile_name_base)[0]
 outfile_name = outfile_name_wo_ext + "_nool.bam"
 
 #output_dir = "assemblies/HG00096"
-output_dir = sys.argv[2]
+output_dir = sys.argv[2] + "/"
 
-outfile = pysam.AlignmentFile(output_dir + "/" + outfile_name, "wb", template=infile)
+outfile = pysam.AlignmentFile(output_dir + outfile_name, "wb", template=infile)
 
 #if_hg38 = True
 if_hg38_str = sys.argv[3]
