@@ -93,3 +93,6 @@ g.close()
 
 #Get regions where read depth > 2 * avg_read_depth
 
+#For now, we filter calls by read depth
+
+

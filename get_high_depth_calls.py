@@ -42,7 +42,3 @@ for counter, rec in enumerate(f.fetch()):
         g.write("\n")
             
     g.close()
-    
-    #test
-    #if counter > 200:
-    #    break
