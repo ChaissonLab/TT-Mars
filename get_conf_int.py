@@ -2,11 +2,12 @@
 import pysam
 import sys 
 import os
-import sys 
+import numpy as np
   
 #get command line input
 #n = len(sys.argv)
 output_dir = sys.argv[1] + "/"
+#assembly bam file
 bam_file1 = sys.argv[2]
 bam_file2 = sys.argv[3]
 if_hg38_str = sys.argv[4]
@@ -18,6 +19,12 @@ else:
 #if_hg38 = True
 
 avg_read_depth = sys.argv[5]
+
+#reads bam file
+bam_file = sys.argv[6]
+
+#callset file
+vcf_file = sys.argv[7]
 
 
 chr_list = ["1", "2", "3", "4", "5",
@@ -94,5 +101,29 @@ g.close()
 #Get regions where read depth > 2 * avg_read_depth
 
 #For now, we filter calls by read depth
+#In other words, here output calls having high read depth
 
+#Too slow here
+
+samfile = pysam.AlignmentFile(bam_file, "rb")
+
+f = pysam.VariantFile(vcf_file,'r')
+for counter, rec in enumerate(f.fetch()):
+    #TODO: change open condition
+    g = open(output_dir + "exclude_high_depth.bed", "a")
+    #get ref start and ref end
+    name = rec.chrom
+    sv_pos = rec.pos
+    sv_end = rec.stop
+    res = samfile.count_coverage(name, sv_pos, sv_end+1, quality_threshold = 0)
+    #print(res)
+    if round(np.sum(res)/(sv_end+1-sv_pos), 2) > 2*avg_read_depth:
+        #test
+        #print(counter, round(np.sum(res)/(sv_end+1-sv_pos), 2))
+        g.write(str(name) + "\t")
+        g.write(str(sv_pos) + "\t")
+        g.write(str(sv_end))
+        g.write("\n")
+            
+    g.close()
 
