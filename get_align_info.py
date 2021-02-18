@@ -14,15 +14,20 @@ import numpy as np
 #n = len(sys.argv)
 output_dir = sys.argv[1] + "/"
 vcf_file = sys.argv[2]
-bam_file1 = sys.argv[3]
-bam_file2 = sys.argv[4]
-ref_file = sys.argv[5]
-query_file1 = sys.argv[6]
-query_file2 = sys.argv[7]
-liftover_file = sys.argv[8]
+#bam_file1 = sys.argv[3]
+#bam_file2 = sys.argv[4]
+ref_file = sys.argv[3]
+query_file1 = sys.argv[4]
+query_file2 = sys.argv[5]
+liftover_file = sys.argv[6]
+if_hg38_input = sys.argv[7]
 
 # %%
 #constants
+
+if_hg38 = False
+if if_hg38_input == "True":
+    if_hg38 = True
 
 #interval length
 interval = 20
@@ -180,7 +185,7 @@ output_file_name = output_dir + "align_info_" + name_str + "_chr" + chromosome +
 query_fasta_file = pysam.FastaFile(query_file)
 ref_fasta_file = pysam.FastaFile(ref_file)
 ref_name = ""
-
+memory_limit = 50000
 
 g = open(output_file_name, "w")
 for counter, rec in enumerate(f.fetch()):
@@ -340,7 +345,7 @@ for counter, rec in enumerate(f.fetch()):
         query_frag = query_frag.upper()
 
         #TODO: fragments too long will cause memory problem
-        memory_limit = 20000
+        
         if len(str(query_frag)) > memory_limit or len(str(ref_frag)) > memory_limit:
             message = "memory_limit"
             #write_err(output_file_name, message, g)
@@ -387,7 +392,7 @@ for counter, rec in enumerate(f.fetch()):
         query_frag = query_frag.upper()
 
         #TODO: fragments too long will cause memory problem
-        memory_limit = 20000
+        
         if len(str(query_frag)) > memory_limit or len(str(ref_frag)) > memory_limit:
             message = "memory_limit"
             #write_err(output_file_name, message, g)
