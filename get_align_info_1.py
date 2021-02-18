@@ -162,7 +162,9 @@ def infer_sv_query_pos(read, pos):
 
 '''
 
-#Modify the dictionay to reduce memory usage
+#TODO: Modify the dictionay to reduce memory usage
+#refname: refpos: queryname: querypos
+
 dict1 = dict()
 with open(output_dir + "lo_pos_assem1_withSed_result.bed") as f:
     for line in f:
@@ -175,10 +177,6 @@ with open(output_dir + "lo_pos_assem1_withSed_result.bed") as f:
         #third level key: queryname
         third_key = record[0]
         if first_key in dict1:
-            #if second_key in dict1[first_key]:
-                #TODO: Note: do NOT allow one ref pos have multiple pos on query contigs now!!!
-                #dict1[first_key][second_key][third_key] = record[1]
-            #else:
             if second_key not in dict1[first_key]:
                 #third_dict = {third_key: record[1]}
                 third_dict = [third_key, record[1]]
@@ -189,6 +187,7 @@ with open(output_dir + "lo_pos_assem1_withSed_result.bed") as f:
             second_dict = {second_key: third_dict}
             dict1[first_key] = second_dict
 f.close()
+
 
 '''
 dict2 = dict()
@@ -222,57 +221,6 @@ f.close()
 # %%
 #get vcf file and run score_callset on each SV record
 
-#build a dictionary:
-#key: position on hg37
-#value: lifted over position on hg38
-#files are resutls from lo_ref.py
-
-#TODO: now the liftover result is for DEL only
-
-#build a list to store positions of DEL cases failed to be lifted over
-'''
-DEL_fail_pos = []
-with open("../DEL_calls_hg38_pos_from_hg37_fail.bed") as f:
-    reader = csv.reader(f, delimiter="\t")
-    DEL_fail_pos_raw = list(reader)
-f.close()
-
-for record in DEL_fail_pos_raw:
-	#if the line is not failure information
-	if len(record) > 1:
-		#appened a list of str
-		DEL_fail_pos.append(record)
-
-#build a dictionary for the cases not in DEL_fail_pos
-
-with open("../DEL_calls_hg37_pos.bed") as f:
-    reader = csv.reader(f, delimiter="\t")
-    DEL_calls_hg37_pos = list(reader)
-f.close()
-
-with open("../DEL_calls_hg38_pos_from_hg37.bed") as f:
-    reader = csv.reader(f, delimiter="\t")
-    DEL_calls_hg38_pos_from_hg37 = list(reader)
-f.close()
-
-dict_hg37_to_hg38 = dict()
-
-counter_success = 0
-for record in DEL_calls_hg37_pos:
-	temp = [record[0], record[1], record[2]]
-	if temp in DEL_fail_pos:
-		continue
-	else:
-		#key: chrname_startpos_endpos
-		key = str(record[0]) + str(record[1]) + str(record[2])
-		dict_hg37_to_hg38[key] = DEL_calls_hg38_pos_from_hg37[counter_success]
-		counter_success = counter_success + 1
-'''
-
-
-# %%
-#get vcf file and run score_callset on each SV record
-
 #TODO: filter out centromere cases
 
 f = pysam.VariantFile(vcf_file,'r')
@@ -294,14 +242,6 @@ ref_fasta_file = pysam.FastaFile(ref_file)
 ref_name = ""
 
 for counter, rec in enumerate(f.fetch()):
-    #counter of all DEL
-
-    #test 1129 3636
-    #if counter < 3636:
-    #    continue
-
-    #if counter > 110:
-    #    break
         
     name = rec.chrom
 
