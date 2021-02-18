@@ -352,9 +352,12 @@ for counter, rec in enumerate(f.fetch()):
 
         #TODO: find a appropriate alignment parameters
         #paras: match, mismatch, open gap, extend gap
-        alignment_beforeSV = pairwise2.align.globalms(str(query_frag), str(ref_frag), 1, -1, -1, -0.5)
+        #alignment_beforeSV = pairwise2.align.globalms(str(query_frag), str(ref_frag), 1, -1, -1, -0.5)
+        #alignment_afterSV = pairwise2.align.globalms(str(query_frag), str(ref_afterSV_frag1) 
+        #                        + str(ref_afterSV_frag2), 1, -1, -1, -0.5)
+        alignment_beforeSV = pairwise2.align.globalms(str(query_frag), str(ref_frag), 1, -1, -1, -0.5, score_only = True)
         alignment_afterSV = pairwise2.align.globalms(str(query_frag), str(ref_afterSV_frag1) 
-                                + str(ref_afterSV_frag2), 1, -1, -1, -0.5)
+                                + str(ref_afterSV_frag2), 1, -1, -1, -0.5, score_only = True)
 	    #get correct query info format
     
     #case 1: INS
@@ -401,9 +404,9 @@ for counter, rec in enumerate(f.fetch()):
 
         #TODO: find a appropriate alignment parameters
         #paras: match, mismatch, open gap, extend gap
-        alignment_beforeSV = pairwise2.align.globalms(str(query_frag), str(ref_frag), 1, -1, -1, -0.5)
+        alignment_beforeSV = pairwise2.align.globalms(str(query_frag), str(ref_frag), 1, -1, -1, -0.5, score_only = True)
         alignment_afterSV = pairwise2.align.globalms(str(query_frag), str(ref_afterSV_frag1) + str(ins_seq)
-                                + str(ref_afterSV_frag2), 1, -1, -1, -0.5)
+                                + str(ref_afterSV_frag2), 1, -1, -1, -0.5, score_only = True)
 	    #get correct query info format
     
     #Need to store the following information in order:
@@ -422,9 +425,11 @@ for counter, rec in enumerate(f.fetch()):
     # genotype from vcf: 0/1 or 1/1 
 
     g.write(str(counter) + "\t")
-    g.write(str(alignment_beforeSV[0][2]) + "\t")
+    #g.write(str(alignment_beforeSV[0][2]) + "\t")
+    g.write(str(alignment_beforeSV) + "\t")
     #g.write(str(1) + "\t")
-    g.write(str(alignment_afterSV[0][2]) + "\t")
+    #g.write(str(alignment_afterSV[0][2]) + "\t")
+    g.write(str(alignment_afterSV) + "\t")
     #g.write(str(1) + "\t")
     #g.write(str(len(query_start_dic)) + "\t")
     g.write(str(1) + "\t")
