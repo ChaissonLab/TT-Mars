@@ -9,6 +9,8 @@ from Bio.Seq import Seq
 from Bio import pairwise2
 import sys 
 import numpy as np
+
+from Bio import Align
   
 #get command line input
 #n = len(sys.argv)
@@ -38,6 +40,9 @@ chr_len = [250000000, 244000000, 199000000, 192000000, 182000000,
             136000000, 134000000, 116000000, 108000000, 103000000, 
             90400000, 83300000, 80400000, 59200000, 64500000, 
             48200000, 51400000, 157000000, 59400000]
+
+#max length of allowed alignment
+memory_limit = 50000
 
 # %%
 #functions
@@ -185,7 +190,6 @@ output_file_name = output_dir + "align_info_" + name_str + "_chr" + chromosome +
 query_fasta_file = pysam.FastaFile(query_file)
 ref_fasta_file = pysam.FastaFile(ref_file)
 ref_name = ""
-memory_limit = 50000
 
 g = open(output_file_name, "w")
 for counter, rec in enumerate(f.fetch()):
@@ -355,14 +359,22 @@ for counter, rec in enumerate(f.fetch()):
             #write_err(output_file_name, message, g)
             continue
 
-        #TODO: find a appropriate alignment parameters
+        #TODO: find appropriate alignment parameters
         #paras: match, mismatch, open gap, extend gap
-        #alignment_beforeSV = pairwise2.align.globalms(str(query_frag), str(ref_frag), 1, -1, -1, -0.5)
+        
+        aligner = Align.PairwiseAligner()
+        aligner.mode = 'global'
+        aligner.match_score = 1
+        aligner.mismatch_score = -1
+        aligner.open_gap_score = -1
+        aligner.extend_gap_score = -0.5
+        #aligner.score_only = True
+        alignment_beforeSV = aligner.score(str(query_frag), str(ref_frag))
+        alignment_afterSV = aligner.score(str(query_frag), str(ref_afterSV_frag1) + str(ref_afterSV_frag2))
+        
+        #alignment_beforeSV = pairwise2.align.globalms(str(query_frag), str(ref_frag), 1, -1, -1, -0.5, score_only = True)
         #alignment_afterSV = pairwise2.align.globalms(str(query_frag), str(ref_afterSV_frag1) 
-        #                        + str(ref_afterSV_frag2), 1, -1, -1, -0.5)
-        alignment_beforeSV = pairwise2.align.globalms(str(query_frag), str(ref_frag), 1, -1, -1, -0.5, score_only = True)
-        alignment_afterSV = pairwise2.align.globalms(str(query_frag), str(ref_afterSV_frag1) 
-                                + str(ref_afterSV_frag2), 1, -1, -1, -0.5, score_only = True)
+        #                        + str(ref_afterSV_frag2), 1, -1, -1, -0.5, score_only = True)
 	    #get correct query info format
     
     #case 1: INS
@@ -409,9 +421,19 @@ for counter, rec in enumerate(f.fetch()):
 
         #TODO: find a appropriate alignment parameters
         #paras: match, mismatch, open gap, extend gap
-        alignment_beforeSV = pairwise2.align.globalms(str(query_frag), str(ref_frag), 1, -1, -1, -0.5, score_only = True)
-        alignment_afterSV = pairwise2.align.globalms(str(query_frag), str(ref_afterSV_frag1) + str(ins_seq)
-                                + str(ref_afterSV_frag2), 1, -1, -1, -0.5, score_only = True)
+        aligner = Align.PairwiseAligner()
+        aligner.mode = 'global'
+        aligner.match_score = 1
+        aligner.mismatch_score = -1
+        aligner.open_gap_score = -1
+        aligner.extend_gap_score = -0.5
+        #aligner.score_only = True
+        alignment_beforeSV = aligner.score(str(query_frag), str(ref_frag))
+        alignment_afterSV = aligner.score(str(query_frag), str(ref_afterSV_frag1) + str(ref_afterSV_frag2))
+        
+        #alignment_beforeSV = pairwise2.align.globalms(str(query_frag), str(ref_frag), 1, -1, -1, -0.5, score_only = True)
+        #alignment_afterSV = pairwise2.align.globalms(str(query_frag), str(ref_afterSV_frag1) 
+        #                        + str(ref_afterSV_frag2), 1, -1, -1, -0.5, score_only = True)
 	    #get correct query info format
     
     #Need to store the following information in order:
@@ -430,14 +452,15 @@ for counter, rec in enumerate(f.fetch()):
     # genotype from vcf: 0/1 or 1/1 
 
     g.write(str(counter) + "\t")
-    #g.write(str(alignment_beforeSV[0][2]) + "\t")
+    
     g.write(str(alignment_beforeSV) + "\t")
     #g.write(str(1) + "\t")
-    #g.write(str(alignment_afterSV[0][2]) + "\t")
     g.write(str(alignment_afterSV) + "\t")
     #g.write(str(1) + "\t")
+    
     #g.write(str(len(query_start_dic)) + "\t")
     g.write(str(1) + "\t")
+    
     g.write(str(sv_type) + "\t")
     g.write(str(hap) + "\t")
     g.write(str(len(query_frag)) + "\t")
