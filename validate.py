@@ -10,17 +10,17 @@ import pysam
 
 import numpy as np 
 import matplotlib.pyplot as plt  
+import sys
 
 # %%
 #input
 
 output_dir = sys.argv[1] + "/"
-vcf_file = sys.argv[2]
-if_hg38_input = sys.argv[3]
-centromere_file = sys.argv[4]
-exclude_assem1_non_cover_file = sys.argv[5]
-exclude_assem2_non_cover_file = sys.argv[6]
-exclude_high_depth_file = sys.argv[7]
+if_hg38_input = sys.argv[2]
+centromere_file = sys.argv[3]
+exclude_assem1_non_cover_file = sys.argv[4]
+exclude_assem2_non_cover_file = sys.argv[5]
+exclude_high_depth_file = sys.argv[6]
 
 # %%
 #constants
@@ -152,87 +152,98 @@ else:
                 "21", "22", "X", "Y"]
 
 def updateDict(dict_score, align_info):
-	for record in align_info:
-		#some cases are not aligned successfully due to function's (memory) issues: give -1 in that column
-		if int(record[3]) > 0 and abs(int(record[8])) > 30 and str(record[9]) in chr_list:
-			#filter out centromere cases
-			index = str(record[0])
-			ref_name = str(record[9])
-			ref_start = int(record[12])
-			ref_end = int(record[13])
-            
-			if if_hg38:
-				centro_start = int(dict_centromere[ref_name][0])
-				centro_end = int(dict_centromere[ref_name][1])
-			else:
-				centro_start = int(dict_centromere['chr'+ref_name][0])
-				centro_end = int(dict_centromere['chr'+ref_name][1])
+    for record in align_info:
+        #len > 30
+        if int(record[3]) > 0 and abs(int(record[8])) > 30 and str(record[9]) in chr_list:
+            #filter out centromere cases
+            index = str(record[0])
+            ref_name = str(record[9])
+            #interval start and end
+            ref_start = int(record[12])
+            ref_end = int(record[13])
 
-			#if SV in the exclude_list: start or end of a contig
-			sv_pos = int(record[10])
-			sv_end = int(record[11])
-			list_to_check = [str(ref_name), str(sv_pos), str(sv_end)]
-			if check_exclude(list_to_check):
-				continue
+            if if_hg38:
+                centro_start = int(dict_centromere[ref_name][0])
+                centro_end = int(dict_centromere[ref_name][1])
+            else:
+                centro_start = int(dict_centromere['chr'+ref_name][0])
+                centro_end = int(dict_centromere['chr'+ref_name][1])
 
-			#if ref start or ref end in centromere, skip this case
-			if (ref_start > centro_start and ref_start < centro_end) or (ref_end > centro_start and ref_end < centro_end):
-				continue
-            
-			#filter out call at high coverage location
-			#ref_start_depth = get_depth(ref_name, ref_start, bam_file)
-			#ref_end_depth = get_depth(ref_name, ref_end, bam_file)
-			#if ((ref_start_depth > 2 * avg_depth) or (ref_end_depth > 2 * avg_depth)):
-			#	continue
+            #if SV in the exclude_list: start or end of a contig
+            sv_pos = int(record[10])
+            sv_end = int(record[11])
+            list_to_check = [str(ref_name), str(sv_pos), str(sv_end)]
+            #if sv in high-depth regions or non-covered regions, skip
+            if check_exclude(list_to_check):
+                continue
 
-			if record[0] not in dict_score:
-				dict_score[record[0]] = record[1:len(record)]
-			else:
-				#TODO: may change
-				#choose the better relative score one:
-				#if one of the before score is 0, choose the better relative length one:
-				'''
-				if float(dict_score[record[0]][0]) == 0 or float(record[1]) == 0:
-					old_rela_len = (float(dict_score[record[0]][5]) - float(dict_score[record[0]][6]))/abs(float(dict_score[record[0]][7]))
-					new_rela_len = (float(record[6]) - float(record[7]))/abs(float(record[8]))
-					if new_rela_len < old_rela_len:
-						dict_score.update({record[0]: record[1:len(record)]})
-					continue
-				old_rela_change = (float(dict_score[record[0]][1]) - float(dict_score[record[0]][0]))/abs(float(dict_score[record[0]][0]))
-				new_rela_change = (float(record[2]) - float(record[1]))/abs(float(record[1]))
-				if new_rela_change > old_rela_change:
-					dict_score.update({record[0]: record[1:len(record)]})
-				'''
-				#if INS or DEL choose the better relative length one:
-				if record[4] == 'INS' or record[4] == 'DEL':
-					if float(dict_score[record[0]][7]) == 0 or float(record[8]) == 0:
-						continue
-					else:
-						old_rela_len = (float(dict_score[record[0]][5]) - float(dict_score[record[0]][6]))/(float(dict_score[record[0]][7]))
-						new_rela_len = (float(record[6]) - float(record[7]))/(float(record[8]))
-                    
-              	      #test
-						#if record[0] == "90":
-						#	print(new_rela_len, old_rela_len)
-                        
-						if abs(new_rela_len - 1) < abs(old_rela_len - 1):
-							dict_score.update({record[0]: record[1:len(record)]})
-                	#if INV choose the better relative score one:
-				elif record[4] == 'INV':
-					if float(dict_score[record[0]][0]) == 0 or float(record[1]) == 0:
-						continue
-					else:
-						old_rela_score = (float(dict_score[record[0]][1]) - float(dict_score[record[0]][0]))/abs(float(dict_score[record[0]][0]))
-						new_rela_score = (float(record[2]) - float(record[1]))/abs(float(record[1]))
-                    
-              	      #test
-						#if record[0] == "90":
-						#	print(new_rela_len, old_rela_len)
-                        
-						if old_rela_score < new_rela_score:
-							dict_score.update({record[0]: record[1:len(record)]})
-	return dict_score
+            #if ref start or ref end in centromere, skip
+            if (ref_start > centro_start and ref_start < centro_end) or (ref_end > centro_start and ref_end < centro_end):
+                continue
 
+            #filter out call at high coverage location
+            #ref_start_depth = get_depth(ref_name, ref_start, bam_file)
+            #ref_end_depth = get_depth(ref_name, ref_end, bam_file)
+            #if ((ref_start_depth > 2 * avg_depth) or (ref_end_depth > 2 * avg_depth)):
+            #continue
+
+            #start to build a dictionay: merge validation information from 2 haplotypes
+            #TODO: solve the score/length = 0 problem
+            #skip before score/length = 0
+            if float(record[1]) == 0 or float(record[8]) == 0:
+                continue
+
+            if record[0] not in dict_score:
+                dict_score[record[0]] = record[1:len(record)]
+            else:
+                #TODO: solve the score = 0 problem
+                #choose the better relative score one:
+                #if one of the before score is 0, choose the better relative length one:
+                '''
+                if float(dict_score[record[0]][0]) == 0 or float(record[1]) == 0:
+                    old_rela_len = (float(dict_score[record[0]][5]) - float(dict_score[record[0]][6]))/abs(float(dict_score[record[0]][7]))
+                    new_rela_len = (float(record[6]) - float(record[7]))/abs(float(record[8]))
+                    if new_rela_len < old_rela_len:
+                        dict_score.update({record[0]: record[1:len(record)]})
+                    continue
+                old_rela_change = (float(dict_score[record[0]][1]) - float(dict_score[record[0]][0]))/abs(float(dict_score[record[0]][0]))
+                new_rela_change = (float(record[2]) - float(record[1]))/abs(float(record[1]))
+                if new_rela_change > old_rela_change:
+                    dict_score.update({record[0]: record[1:len(record)]})
+                '''
+                #if INS or DEL choose the tp one
+                #if both tp/fp, choose the better relative length one
+                if record[4] == 'INS' or record[4] == 'DEL':
+                    old_rela_score = (float(dict_score[record[0]][1]) - float(dict_score[record[0]][0]))/abs(float(dict_score[record[0]][0]))
+                    new_rela_score = (float(record[2]) - float(record[1]))/abs(float(record[1]))
+                    old_rela_len = (float(dict_score[record[0]][5]) - float(dict_score[record[0]][6]))/(float(dict_score[record[0]][7]))
+                    new_rela_len = (float(record[6]) - float(record[7]))/(float(record[8]))
+
+                    old_res = check_tp(old_rela_len, old_rela_score)
+                    new_res = check_tp(new_rela_len, new_rela_score)
+
+                    if new_res and not old_res:
+                        dict_score.update({record[0]: record[1:len(record)]})
+                    elif old_res and not new_res:
+                        continue
+                    else:
+                        if abs(new_rela_len - 1) < abs(old_rela_len - 1):
+                            dict_score.update({record[0]: record[1:len(record)]})
+                #if INV choose the better relative score one:
+                elif record[4] == 'INV':
+                    if float(dict_score[record[0]][0]) == 0 or float(record[1]) == 0:
+                        continue
+                    else:
+                        old_rela_score = (float(dict_score[record[0]][1]) - float(dict_score[record[0]][0]))/abs(float(dict_score[record[0]][0]))
+                        new_rela_score = (float(record[2]) - float(record[1]))/abs(float(record[1]))
+
+                      #test
+                        #if record[0] == "90":
+                        #	print(new_rela_len, old_rela_len)
+
+                        if old_rela_score < new_rela_score:
+                            dict_score.update({record[0]: record[1:len(record)]})
+    return dict_score
 
 
 # %%
@@ -248,55 +259,35 @@ with open(output_dir + "align_info_assem2_chrall.txt") as f:
 	align_info_assem2 = list(reader)
 f.close()
 
-#dicts for single haplotypes and combined
+#dicts for btoh haplotypes
 dict_comb = dict()
 dict_comb = updateDict(dict_comb, align_info_assem1)
 dict_comb = updateDict(dict_comb, align_info_assem2)
 
-align_plot_info_1 = []
-for record in align_info_assem1:
-	if record[0] in dict_1:
-		#TODO: handle this case
-		#if zero score_before
-		if float(dict_1[record[0]][0]) == 0 or float(record[8]) == 0:
-			continue
-		#round to 2 decimal points
-		#print(float(record[8]))
-		rela_len = round((float(record[6]) - float(record[7]))/float(record[8]), 2)
-		rela_score = round((float(dict_1[record[0]][1]) - float(dict_1[record[0]][0]))/abs(float(dict_1[record[0]][0])), 2)
-		align_plot_info_1.append([rela_len, rela_score, int(record[0])])
 
-align_plot_info_2 = []
-for record in align_info_assem2:
-	if record[0] in dict_2:
-		#TODO: handle this case
-		#if zero score_before
-		if float(dict_2[record[0]][0]) == 0 or float(record[8]) == 0:
-			continue
-		#round to 2 decimal points
-		#print(float(record[8]))
-		rela_len = round((float(record[6]) - float(record[7]))/float(record[8]), 2)
-		rela_score = round((float(dict_2[record[0]][1]) - float(dict_2[record[0]][0]))/abs(float(dict_2[record[0]][0])), 2)
-		align_plot_info_2.append([rela_len, rela_score, int(record[0])])
 
-#combine two haplotypes
-#TODO: debug this part: check the results!!!
-align_plot_info_comb = []
+#TODO: output tp/fp as vcf files
+#output a text file
+#CHR POS END SVTYPE rela_len rela_score validation_res
+
+g = open(output_dir + "ttmars_res.txt", "w")
 for record in dict_comb:
-		#TODO: solve 0 score problem: should be included!!!
-		#if zero score
-		if float(dict_comb[record][0]) == 0 or float(dict_comb[record][7]) == 0:
-			#rela_score = 0.01
-			continue
-		else:
-			#round to 2 decimal points
-			rela_score = round((float(dict_comb[record][1]) - float(dict_comb[record][0]))/abs(float(dict_comb[record][0])), 2)
-		rela_len = round((float(dict_comb[record][5]) - float(dict_comb[record][6]))/float(dict_comb[record][7]), 2)
+    #TODO: solve 0 score problem
+    #if zero score
+    if float(dict_comb[record][0]) == 0 or float(dict_comb[record][7]) == 0:
+        #rela_score = 0.01
+        continue
+    rela_score = round((float(dict_comb[record][1]) - float(dict_comb[record][0]))/abs(float(dict_comb[record][0])), 2)
+    rela_len = round((float(dict_comb[record][5]) - float(dict_comb[record][6]))/float(dict_comb[record][7]), 2)
 
-		align_plot_info_comb.append([rela_len, rela_score, int(record)])
+    g.write(str(dict_comb[record][8]) + "\t")
+    g.write(str(dict_comb[record][9]) + "\t")
+    g.write(str(dict_comb[record][10]) + "\t")
+    g.write(str(dict_comb[record][3]) + "\t")
+    g.write(str(rela_len) + "\t")
+    g.write(str(rela_score) + "\t")
+    g.write(str(check_tp(rela_len, rela_score)) + "\t")
+    g.write("\n")
+g.close()
 
-        
-        
-        
-#output tp/fp as vcf files
-
+    

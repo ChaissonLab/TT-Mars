@@ -181,9 +181,9 @@ f.close()
 
 f = pysam.VariantFile(vcf_file,'r')
 
-query_file = query_file1
-hap = 1
-name_str = "assem1"
+query_file = query_file2
+hap = 2
+name_str = "assem2"
 chromosome = "all"
 output_file_name = output_dir + "align_info_" + name_str + "_chr" + chromosome + ".txt"
 
@@ -476,3 +476,6 @@ for counter, rec in enumerate(f.fetch()):
     g.write("noerr" + "\t")
     g.write("\n")
 g.close()
+
+
+#main function and pack all the steps by both haplotypes
