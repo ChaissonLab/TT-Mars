@@ -290,4 +290,3 @@ for record in dict_comb:
     g.write("\n")
 g.close()
 
-    
