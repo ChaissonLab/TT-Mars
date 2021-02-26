@@ -12,78 +12,63 @@ import numpy as np
 import matplotlib.pyplot as plt  
 import sys
 
-# %%
-#input
-
-output_dir = sys.argv[1] + "/"
-if_hg38_input = sys.argv[2]
-centromere_file = sys.argv[3]
-exclude_assem1_non_cover_file = sys.argv[4]
-exclude_assem2_non_cover_file = sys.argv[5]
-exclude_high_depth_file = sys.argv[6]
-
-# %%
-#constants
-
-interval = 20
-
-if_hg38 = False
-if if_hg38_input == "True":
-    if_hg38 = True
-
-# %%
 #build centromere position dictionary
 
-#centromere file
-centromere_raw = []
-with open(centromere_file) as f:
-    reader = csv.reader(f, delimiter="\t")
-    centromere_raw = list(reader)
-f.close() 
+def build_centro_dict(centromere_file):
+    #centromere file
+    centromere_raw = []
+    with open(centromere_file) as f:
+        reader = csv.reader(f, delimiter="\t")
+        centromere_raw = list(reader)
+    f.close() 
 
-#build dictionay
-dict_centromere = dict()
-pre_centro_chr = ""
-start_centro_pos = ""
-for record in centromere_raw:
-    if record[0] == pre_centro_chr:
-        end_centro_pos = str(record[2])
-        dict_centromere[record[0]] = (start_centro_pos, end_centro_pos)
-    else:
-        start_centro_pos = str(record[1])
-        pre_centro_chr = record[0]
-
+    #build dictionay
+    dict_centromere = dict()
+    pre_centro_chr = ""
+    start_centro_pos = ""
+    for record in centromere_raw:
+        if record[0] == pre_centro_chr:
+            end_centro_pos = str(record[2])
+            dict_centromere[record[0]] = (start_centro_pos, end_centro_pos)
+        else:
+            start_centro_pos = str(record[1])
+            pre_centro_chr = record[0]
+    return dict_centromere
 
 # %%
 #build lists for excluded SV positions
 
-with open(exclude_assem1_non_cover_file) as f:
-    reader = csv.reader(f, delimiter="\t")
-    exclude_assem1_non_cover = list(reader)
-f.close()
+def get_filtered_sv_pos(exclude_assem1_non_cover_file, exclude_assem2_non_cover_file, exclude_high_depth_file):
 
-with open(exclude_assem2_non_cover_file) as f:
-    reader = csv.reader(f, delimiter="\t")
-    exclude_assem2_non_cover = list(reader)
-f.close()
+    with open(exclude_assem1_non_cover_file) as f:
+        reader = csv.reader(f, delimiter="\t")
+        exclude_assem1_non_cover = list(reader)
+    f.close()
 
-'''
-with open(output_dir + "exclude_assem1_short_reads_250000.bed") as f:
-    reader = csv.reader(f, delimiter="\t")
-    exclude_assem1_short_reads = list(reader)
-f.close()
+    with open(exclude_assem2_non_cover_file) as f:
+        reader = csv.reader(f, delimiter="\t")
+        exclude_assem2_non_cover = list(reader)
+    f.close()
 
-with open(output_dir + "exclude_assem2_short_reads_250000.bed") as f:
-    reader = csv.reader(f, delimiter="\t")
-    exclude_assem2_short_reads = list(reader)
-f.close()
-'''
+    '''
+    with open(output_dir + "exclude_assem1_short_reads_250000.bed") as f:
+        reader = csv.reader(f, delimiter="\t")
+        exclude_assem1_short_reads = list(reader)
+    f.close()
 
-with open(exclude_high_depth_file) as f:
-#with open("/panfs/qcb-panasas/jianzhiy/illuVeri/use_mcutils/output/v4.6.1/lumpy/HG002/exclude_high_depth.bed") as f:
-    reader = csv.reader(f, delimiter="\t")
-    exclude_high_depth = list(reader)
-f.close()
+    with open(output_dir + "exclude_assem2_short_reads_250000.bed") as f:
+        reader = csv.reader(f, delimiter="\t")
+        exclude_assem2_short_reads = list(reader)
+    f.close()
+    '''
+
+    with open(exclude_high_depth_file) as f:
+    #with open("/panfs/qcb-panasas/jianzhiy/illuVeri/use_mcutils/output/v4.6.1/lumpy/HG002/exclude_high_depth.bed") as f:
+        reader = csv.reader(f, delimiter="\t")
+        exclude_high_depth = list(reader)
+    f.close()
+    
+    return exclude_assem1_non_cover, exclude_assem2_non_cover, exclude_high_depth
 
 #check if current cases is in the excluded list
 def check_exclude(list_to_check):
@@ -137,19 +122,6 @@ def check_tp (rela_len, rela_score):
 # error message
 # (err_mes)
 
-chr_list = []
-if if_hg38:
-    chr_list = ["chr1", "chr2", "chr3", "chr4", "chr5",
-                "chr6", "chr7", "chr8", "chr9", "chr10",
-                "chr11", "chr12", "chr13", "chr14", "chr15",
-                "chr16", "chr17", "chr18", "chr19", "chr20",
-                "chr21", "chr22", "chrX", "chrY"]
-else:
-    chr_list = ["1", "2", "3", "4", "5",
-                "6", "7", "8", "9", "10",
-                "11", "12", "13", "14", "15",
-                "16", "17", "18", "19", "20",
-                "21", "22", "X", "Y"]
 
 def updateDict(dict_score, align_info):
     for record in align_info:
@@ -246,47 +218,88 @@ def updateDict(dict_score, align_info):
     return dict_score
 
 
-# %%
-
-#validate by both haplotypes
-with open(output_dir + "align_info_assem1_chrall.txt") as f:
-	reader = csv.reader(f, delimiter="\t")
-	align_info_assem1 = list(reader)
-f.close()
-
-with open(output_dir + "align_info_assem2_chrall.txt") as f:
-	reader = csv.reader(f, delimiter="\t")
-	align_info_assem2 = list(reader)
-f.close()
-
-#dicts for btoh haplotypes
-dict_comb = dict()
-dict_comb = updateDict(dict_comb, align_info_assem1)
-dict_comb = updateDict(dict_comb, align_info_assem2)
-
-
 
 #TODO: output tp/fp as vcf files
 #output a text file
 #CHR POS END SVTYPE rela_len rela_score validation_res
 
-g = open(output_dir + "ttmars_res.txt", "w")
-for record in dict_comb:
-    #TODO: solve 0 score problem
-    #if zero score
-    if float(dict_comb[record][0]) == 0 or float(dict_comb[record][7]) == 0:
-        #rela_score = 0.01
-        continue
-    rela_score = round((float(dict_comb[record][1]) - float(dict_comb[record][0]))/abs(float(dict_comb[record][0])), 2)
-    rela_len = round((float(dict_comb[record][5]) - float(dict_comb[record][6]))/float(dict_comb[record][7]), 2)
+#write output
+def write_output(output_dir, dict_comb):
+    g = open(output_dir + "ttmars_res.txt", "w")
+    for record in dict_comb:
+        #TODO: solve 0 score problem
+        #if zero score
+        if float(dict_comb[record][0]) == 0 or float(dict_comb[record][7]) == 0:
+            #rela_score = 0.01
+            continue
+        rela_score = round((float(dict_comb[record][1]) - float(dict_comb[record][0]))/abs(float(dict_comb[record][0])), 2)
+        rela_len = round((float(dict_comb[record][5]) - float(dict_comb[record][6]))/float(dict_comb[record][7]), 2)
 
-    g.write(str(dict_comb[record][8]) + "\t")
-    g.write(str(dict_comb[record][9]) + "\t")
-    g.write(str(dict_comb[record][10]) + "\t")
-    g.write(str(dict_comb[record][3]) + "\t")
-    g.write(str(rela_len) + "\t")
-    g.write(str(rela_score) + "\t")
-    g.write(str(check_tp(rela_len, rela_score)) + "\t")
-    g.write("\n")
-g.close()
+        g.write(str(dict_comb[record][8]) + "\t")
+        g.write(str(dict_comb[record][9]) + "\t")
+        g.write(str(dict_comb[record][10]) + "\t")
+        g.write(str(dict_comb[record][3]) + "\t")
+        g.write(str(rela_len) + "\t")
+        g.write(str(rela_score) + "\t")
+        g.write(str(check_tp(rela_len, rela_score)) + "\t")
+        g.write("\n")
+    g.close()
 
+
+def main():
+    #input
+    output_dir = sys.argv[1] + "/"
+    if_hg38_input = sys.argv[2]
+    centromere_file = sys.argv[3]
+    exclude_assem1_non_cover_file = sys.argv[4]
+    exclude_assem2_non_cover_file = sys.argv[5]
+    exclude_high_depth_file = sys.argv[6]
+    
+    #constants
+    interval = 20
+
+    if_hg38 = False
+    if if_hg38_input == "True":
+        if_hg38 = True
+    
+    chr_list = []
+    if if_hg38:
+        chr_list = ["chr1", "chr2", "chr3", "chr4", "chr5",
+                    "chr6", "chr7", "chr8", "chr9", "chr10",
+                    "chr11", "chr12", "chr13", "chr14", "chr15",
+                    "chr16", "chr17", "chr18", "chr19", "chr20",
+                    "chr21", "chr22", "chrX", "chrY"]
+    else:
+        chr_list = ["1", "2", "3", "4", "5",
+                    "6", "7", "8", "9", "10",
+                    "11", "12", "13", "14", "15",
+                    "16", "17", "18", "19", "20",
+                    "21", "22", "X", "Y"]
+        
+    #build centromere dictionary
+    dict_centromere = build_centro_dict(centromere_file)
+    
+    #build lists for excluded SV positions
+    exclude_assem1_non_cover, exclude_assem2_non_cover, exclude_high_depth = 
+        get_filtered_sv_pos(exclude_assem1_non_cover_file, exclude_assem2_non_cover_file, exclude_high_depth_file)
+    
+    #validate by both haplotypes
+    with open(output_dir + "align_info_assem1_chrall.txt") as f:
+        reader = csv.reader(f, delimiter="\t")
+        align_info_assem1 = list(reader)
+    f.close()
+
+    with open(output_dir + "align_info_assem2_chrall.txt") as f:
+        reader = csv.reader(f, delimiter="\t")
+        align_info_assem2 = list(reader)
+    f.close()
+
+    dict_comb = dict()
+    dict_comb = updateDict(dict_comb, align_info_assem1)
+    dict_comb = updateDict(dict_comb, align_info_assem2)
+    
+    #write output
+    write_output(output_dir, dict_comb)
+
+if __name__ == "__main__":
+    main()
