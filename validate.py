@@ -13,7 +13,6 @@ import matplotlib.pyplot as plt
 import sys
 
 #build centromere position dictionary
-
 def build_centro_dict(centromere_file):
     #centromere file
     centromere_raw = []
@@ -35,9 +34,7 @@ def build_centro_dict(centromere_file):
             pre_centro_chr = record[0]
     return dict_centromere
 
-# %%
 #build lists for excluded SV positions
-
 def get_filtered_sv_pos(exclude_assem1_non_cover_file, exclude_assem2_non_cover_file, exclude_high_depth_file):
 
     with open(exclude_assem1_non_cover_file) as f:
@@ -96,6 +93,7 @@ def get_depth(ref_name, ref_pos, bam_file):
             break
     return int(res[start:end])
 
+#check if true positive or not
 def check_tp (rela_len, rela_score):
     result = True
     if rela_score >= 0 and rela_score <= 2.5:
@@ -112,17 +110,7 @@ def check_tp (rela_len, rela_score):
         result = False
     return result
 
-#in align_info:
-# SV_index score_before score_after no_found SV_type hap:1 or 2
-# (counter alignment_beforeSV[0][2] alignment_afterSV[0][2] len(query_start_dic) sv_type hap)
-# contig_seg_len ref_seg_len SV_len
-# (len(query_frag) len(ref_frag) sv_end-sv_pos+1)
-# chr_name SV_start SV_end interval_start interval_end
-# (ref_name sv_pos sv_end ref_start ref_end)
-# error message
-# (err_mes)
-
-
+# build dictionary for validation
 def updateDict(dict_score, align_info):
     for record in align_info:
         #len > 30
@@ -217,6 +205,23 @@ def updateDict(dict_score, align_info):
                             dict_score.update({record[0]: record[1:len(record)]})
     return dict_score
 
+#validate by both haplotypes
+def vali_info(output_dir):
+    with open(output_dir + "align_info_assem1_chrall.txt") as f:
+        reader = csv.reader(f, delimiter="\t")
+        align_info_assem1 = list(reader)
+    f.close()
+
+    with open(output_dir + "align_info_assem2_chrall.txt") as f:
+        reader = csv.reader(f, delimiter="\t")
+        align_info_assem2 = list(reader)
+    f.close()
+
+    dict_comb = dict()
+    dict_comb = updateDict(dict_comb, align_info_assem1)
+    dict_comb = updateDict(dict_comb, align_info_assem2)
+
+    return dict_comb
 
 
 #TODO: output tp/fp as vcf files
@@ -245,7 +250,7 @@ def write_output(output_dir, dict_comb):
         g.write("\n")
     g.close()
 
-
+#main function
 def main():
     #input
     output_dir = sys.argv[1] + "/"
@@ -257,11 +262,9 @@ def main():
     
     #constants
     interval = 20
-
     if_hg38 = False
     if if_hg38_input == "True":
         if_hg38 = True
-    
     chr_list = []
     if if_hg38:
         chr_list = ["chr1", "chr2", "chr3", "chr4", "chr5",
@@ -280,23 +283,14 @@ def main():
     dict_centromere = build_centro_dict(centromere_file)
     
     #build lists for excluded SV positions
+    
+    python get_conf_int.py output_dir output_dir/trimmed_assembly1/2_sort.bam if_hg38 avg_read_depth illumina_read.bam callset_file
+    
     exclude_assem1_non_cover, exclude_assem2_non_cover, exclude_high_depth = 
         get_filtered_sv_pos(exclude_assem1_non_cover_file, exclude_assem2_non_cover_file, exclude_high_depth_file)
     
     #validate by both haplotypes
-    with open(output_dir + "align_info_assem1_chrall.txt") as f:
-        reader = csv.reader(f, delimiter="\t")
-        align_info_assem1 = list(reader)
-    f.close()
-
-    with open(output_dir + "align_info_assem2_chrall.txt") as f:
-        reader = csv.reader(f, delimiter="\t")
-        align_info_assem2 = list(reader)
-    f.close()
-
-    dict_comb = dict()
-    dict_comb = updateDict(dict_comb, align_info_assem1)
-    dict_comb = updateDict(dict_comb, align_info_assem2)
+    dict_comb = vali_info(output_dir)
     
     #write output
     write_output(output_dir, dict_comb)
