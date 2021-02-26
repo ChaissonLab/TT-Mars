@@ -22,6 +22,9 @@ Softwares: samtools (https://github.com/samtools/samtools), samliftover (https:/
 
 ## Usage
 
-
+python 
 
 ## Output
+
+ttmars_res.txt: chr start end type relative_length relative_score validation_result  
+Example: chr1	893792	893827	DEL	1.03	3.18	True
