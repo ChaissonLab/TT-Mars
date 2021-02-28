@@ -12,6 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt  
 import sys
 
+
 #build centromere position dictionary
 def build_centro_dict(centromere_file):
     #centromere file
@@ -94,7 +95,7 @@ def get_depth(ref_name, ref_pos, bam_file):
     return int(res[start:end])
 
 #check if true positive or not
-def check_tp (rela_len, rela_score):
+def check_tp(rela_len, rela_score):
     result = True
     if rela_score >= 0 and rela_score <= 2.5:
         if rela_len >= -0.05*rela_score + 0.8 and rela_len <= 0.05*rela_score + 1.2:
@@ -283,9 +284,6 @@ def main():
     dict_centromere = build_centro_dict(centromere_file)
     
     #build lists for excluded SV positions
-    
-    python get_conf_int.py output_dir output_dir/trimmed_assembly1/2_sort.bam if_hg38 avg_read_depth illumina_read.bam callset_file
-    
     exclude_assem1_non_cover, exclude_assem2_non_cover, exclude_high_depth = 
         get_filtered_sv_pos(exclude_assem1_non_cover_file, exclude_assem2_non_cover_file, exclude_high_depth_file)
     
