@@ -138,7 +138,8 @@ def build_map(chr_len, interval, liftover_file):
 
 
 #get vcf file and run score_callset on each SV record
-def get_vali_info(output_dir, vcf_file, query_file, hap, ref_file, interval):
+def get_vali_info(output_dir, vcf_file, query_file, hap, ref_file, interval, 
+                  contig_name_list, contig_pos_list, contig_name_dict, memory_limit):
     f = pysam.VariantFile(vcf_file,'r')
     #query_file = query_file2
     #hap = 2
@@ -215,15 +216,15 @@ def get_vali_info(output_dir, vcf_file, query_file, hap, ref_file, interval):
                 second_key_end = ref_end_cand//interval
 
                 start_contig_name_ctr_cand = contig_name_list[first_key][second_key_start]
-                end_contig_name_ctr = contig_name_list[first_key][second_key_end]
+                end_contig_name_ctr_cand = contig_name_list[first_key][second_key_end]
 
-                if start_contig_name_ctr_cand == -1 or end_contig_name_ctr == -1:
+                if start_contig_name_ctr_cand == -1 or end_contig_name_ctr_cand == -1:
                     #print("wrong second key")
                     message = "wrong_sec_key"
                     #write_err(output_file_name, message, g)
                     continue
 
-                if start_contig_name_ctr_cand != end_contig_name_ctr:
+                if start_contig_name_ctr_cand != end_contig_name_ctr_cand:
                     #print("Not same contig")
                     message = "not_same_contig"
                     #write_err(output_file_name, message, g)
@@ -248,7 +249,7 @@ def get_vali_info(output_dir, vcf_file, query_file, hap, ref_file, interval):
                     query_start_best = query_start
                     query_end_best = query_end
                     start_contig_name_ctr = start_contig_name_ctr_cand
-                    end_contig_name_ctr = end_contig_name_ctr
+                    end_contig_name_ctr = end_contig_name_ctr_cand
 
                     if neg_strand_tep:
                         neg_strand = True
@@ -441,12 +442,13 @@ def main():
     #get command line input
     output_dir = sys.argv[1] + "/"
     vcf_file = sys.argv[2]
+    #ref fasta file
     ref_file = sys.argv[3]
-    #query_file1 = sys.argv[4]
-    #query_file2 = sys.argv[5]
-    query_file = sys.argv[4]
-    liftover_file = sys.argv[5]
-    if_hg38_input = sys.argv[6]
+    #assembly fasta files
+    query_file1 = sys.argv[4]
+    query_file2 = sys.argv[5]
+    liftover_file = sys.argv[6]
+    if_hg38_input = sys.argv[7]
 
     #constants
     if_hg38 = False
@@ -466,9 +468,11 @@ def main():
     #build map
     contig_name_list, contig_pos_list, contig_name_dict = build_map(chr_len, interval, liftover_file)
     
-    #get validation info
-    get_vali_info(output_dir, vcf_file, query_file, hap, ref_file)
-    
+    #get validation info for both haplotypes
+    get_vali_info(output_dir, vcf_file, query_file1, 1, ref_file, interval, 
+                  contig_name_list, contig_pos_list, contig_name_dict, memory_limit)
+    get_vali_info(output_dir, vcf_file, query_file2, 2, ref_file, interval, 
+                  contig_name_list, contig_pos_list, contig_name_dict, memory_limit)
     
 
 #main function and pack all the steps by both haplotypes

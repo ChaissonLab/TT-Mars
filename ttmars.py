@@ -7,6 +7,8 @@ import get_align_info.py as get_align_info
 
 #main function
 def main():
+    ##########################################################
+    ##########################################################
     #input
     output_dir = sys.argv[1] + "/"
     if_hg38_input = sys.argv[2]
@@ -20,12 +22,22 @@ def main():
     avg_read_depth = sys.argv[6]
     read_bam_file = sys.argv[7]
     vcf_file = sys.argv[8]
+    #ref fasta file
+    ref_file = sys.argv[9]
+    #assembly fasta files
+    query_file1 = sys.argv[10]
+    query_file2 = sys.argv[11]
+    liftover_file = sys.argv[12]
     
+    ##########################################################
+    ##########################################################
     #constants
+    #liftover interval
     interval = 20
     if_hg38 = False
     if if_hg38_input == "True":
         if_hg38 = True
+    #chr names
     chr_list = []
     if if_hg38:
         chr_list = ["chr1", "chr2", "chr3", "chr4", "chr5",
@@ -39,7 +51,17 @@ def main():
                     "11", "12", "13", "14", "15",
                     "16", "17", "18", "19", "20",
                     "21", "22", "X", "Y"]
+    #approximate length of chromosomes
+    chr_len = [250000000, 244000000, 199000000, 192000000, 182000000, 
+                172000000, 160000000, 147000000, 142000000, 136000000, 
+                136000000, 134000000, 116000000, 108000000, 103000000, 
+                90400000, 83300000, 80400000, 59200000, 64500000, 
+                48200000, 51400000, 157000000, 59400000]
+    #max length of allowed alignment
+    memory_limit = 50000
     
+    ##########################################################
+    ##########################################################
     #build centromere dictionary
     dict_centromere = validate.build_centro_dict(centromere_file)
     
@@ -60,7 +82,13 @@ def main():
     
     #get validation info files
     
-    
+    #build map
+    contig_name_list, contig_pos_list, contig_name_dict = get_align_info.build_map(chr_len, interval, liftover_file)
+    #get validation info for both haplotypes
+    get_align_info.get_vali_info(output_dir, vcf_file, query_file1, 1, ref_file, interval, 
+                  contig_name_list, contig_pos_list, contig_name_dict, memory_limit)
+    get_align_info.get_vali_info(output_dir, vcf_file, query_file2, 2, ref_file, interval, 
+                  contig_name_list, contig_pos_list, contig_name_dict, memory_limit)
     
     
     #validate by both haplotypes: return a dict containing validation info
