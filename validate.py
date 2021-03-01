@@ -69,7 +69,7 @@ def get_filtered_sv_pos(exclude_assem1_non_cover_file, exclude_assem2_non_cover_
     return exclude_assem1_non_cover, exclude_assem2_non_cover, exclude_high_depth
 
 #check if current cases is in the excluded list
-def check_exclude(list_to_check):
+def check_exclude(list_to_check, exclude_assem1_non_cover, exclude_assem2_non_cover, exclude_high_depth):
 	if (list_to_check in exclude_assem1_non_cover) or (list_to_check in exclude_assem2_non_cover):
 		return True
     #With overlapping contigs trimmed, 
@@ -112,7 +112,7 @@ def check_tp(rela_len, rela_score):
     return result
 
 # build dictionary for validation
-def updateDict(dict_score, align_info):
+def updateDict(dict_score, align_info, exclude_assem1_non_cover, exclude_assem2_non_cover, exclude_high_depth):
     for record in align_info:
         #len > 30
         if int(record[3]) > 0 and abs(int(record[8])) > 30 and str(record[9]) in chr_list:
@@ -135,7 +135,7 @@ def updateDict(dict_score, align_info):
             sv_end = int(record[11])
             list_to_check = [str(ref_name), str(sv_pos), str(sv_end)]
             #if sv in high-depth regions or non-covered regions, skip
-            if check_exclude(list_to_check):
+            if check_exclude(list_to_check, exclude_assem1_non_cover, exclude_assem2_non_cover, exclude_high_depth):
                 continue
 
             #if ref start or ref end in centromere, skip
@@ -207,20 +207,20 @@ def updateDict(dict_score, align_info):
     return dict_score
 
 #validate by both haplotypes
-def vali_info(output_dir):
-    with open(output_dir + "align_info_assem1_chrall.txt") as f:
+def vali_info(output_dir, exclude_assem1_non_cover, exclude_assem2_non_cover, exclude_high_depth, assem1_info_file, assem2_info_file):
+    with open(output_dir + assem1_info_file) as f:
         reader = csv.reader(f, delimiter="\t")
         align_info_assem1 = list(reader)
     f.close()
 
-    with open(output_dir + "align_info_assem2_chrall.txt") as f:
+    with open(output_dir + assem2_info_file) as f:
         reader = csv.reader(f, delimiter="\t")
         align_info_assem2 = list(reader)
     f.close()
 
     dict_comb = dict()
-    dict_comb = updateDict(dict_comb, align_info_assem1)
-    dict_comb = updateDict(dict_comb, align_info_assem2)
+    dict_comb = updateDict(dict_comb, align_info_assem1, exclude_assem1_non_cover, exclude_assem2_non_cover, exclude_high_depth)
+    dict_comb = updateDict(dict_comb, align_info_assem2, exclude_assem1_non_cover, exclude_assem2_non_cover, exclude_high_depth)
 
     return dict_comb
 
@@ -288,7 +288,12 @@ def main():
         get_filtered_sv_pos(exclude_assem1_non_cover_file, exclude_assem2_non_cover_file, exclude_high_depth_file)
     
     #validate by both haplotypes
-    dict_comb = vali_info(output_dir)
+    dict_comb = vali_info(output_dir, 
+                          exclude_assem1_non_cover, 
+                          exclude_assem2_non_cover, 
+                          exclude_high_depth, 
+                          "align_info_assem1_chrall.txt",
+                          "align_info_assem2_chrall.txt")
     
     #write output
     write_output(output_dir, dict_comb)

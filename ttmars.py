@@ -2,6 +2,7 @@ import sys
 
 import get_conf_int.py as get_conf_int
 import validate.py as validate
+import get_align_info.py as get_align_info
 
 
 #main function
@@ -57,16 +58,18 @@ def main():
                                      output_dir + "assem2_non_cov_regions.bed", 
                                      output_dir + "exclude_high_depth.bed")
     
-    
-    
-    
-    #validate by both haplotypes
-    dict_comb = validate.vali_info(output_dir)
+    #get validation info files
     
     
     
     
-    
+    #validate by both haplotypes: return a dict containing validation info
+    dict_comb = vali_info(output_dir, 
+                          exclude_assem1_non_cover, 
+                          exclude_assem2_non_cover, 
+                          exclude_high_depth, 
+                          "align_info_assem1_chrall.txt",
+                          "align_info_assem2_chrall.txt")
     
     #write output
     validate.write_output(output_dir, dict_comb)
