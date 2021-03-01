@@ -27,7 +27,8 @@ def main():
     #assembly fasta files
     query_file1 = sys.argv[10]
     query_file2 = sys.argv[11]
-    liftover_file = sys.argv[12]
+    liftover_file1 = sys.argv[12]
+    liftover_file2 = sys.argv[13]
     
     ##########################################################
     ##########################################################
@@ -82,12 +83,13 @@ def main():
     
     #get validation info files
     
-    #build map
-    contig_name_list, contig_pos_list, contig_name_dict = get_align_info.build_map(chr_len, interval, liftover_file)
-    #get validation info for both haplotypes
-    get_align_info.get_vali_info(output_dir, vcf_file, query_file1, 1, ref_file, interval, 
+    #build map and get validation info haplotype 1
+    contig_name_list, contig_pos_list, contig_name_dict = build_map(chr_len, interval, liftover_file1)
+    get_vali_info(output_dir, vcf_file, query_file1, 1, ref_file, interval, 
                   contig_name_list, contig_pos_list, contig_name_dict, memory_limit)
-    get_align_info.get_vali_info(output_dir, vcf_file, query_file2, 2, ref_file, interval, 
+    #build map and get validation info haplotype 2
+    contig_name_list, contig_pos_list, contig_name_dict = build_map(chr_len, interval, liftover_file2)
+    get_vali_info(output_dir, vcf_file, query_file2, 2, ref_file, interval, 
                   contig_name_list, contig_pos_list, contig_name_dict, memory_limit)
     
     

@@ -447,8 +447,9 @@ def main():
     #assembly fasta files
     query_file1 = sys.argv[4]
     query_file2 = sys.argv[5]
-    liftover_file = sys.argv[6]
-    if_hg38_input = sys.argv[7]
+    liftover_file1 = sys.argv[6]
+    liftover_file2 = sys.argv[7]
+    if_hg38_input = sys.argv[8]
 
     #constants
     if_hg38 = False
@@ -464,13 +465,14 @@ def main():
                 48200000, 51400000, 157000000, 59400000]
     #max length of allowed alignment
     memory_limit = 50000
-    
-    #build map
-    contig_name_list, contig_pos_list, contig_name_dict = build_map(chr_len, interval, liftover_file)
-    
-    #get validation info for both haplotypes
+     
+    #build map and get validation info haplotype 1
+    contig_name_list, contig_pos_list, contig_name_dict = build_map(chr_len, interval, liftover_file1)
     get_vali_info(output_dir, vcf_file, query_file1, 1, ref_file, interval, 
                   contig_name_list, contig_pos_list, contig_name_dict, memory_limit)
+    
+    #build map and get validation info haplotype 2
+    contig_name_list, contig_pos_list, contig_name_dict = build_map(chr_len, interval, liftover_file2)
     get_vali_info(output_dir, vcf_file, query_file2, 2, ref_file, interval, 
                   contig_name_list, contig_pos_list, contig_name_dict, memory_limit)
     
