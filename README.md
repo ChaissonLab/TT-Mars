@@ -13,13 +13,16 @@ Softwares: samtools (https://github.com/samtools/samtools), samliftover (https:/
 1. Output directory  
 2. if hg38: if reference is hg38 (True/False). If False, TT-Mars will use hs37d5 as reference  
 3. centromere file: centromere_positions.bed  
-4. and 5. Assembly alignment bam files: assembly1.bam and assembly2.bam (haplotype-resolved)  
+4. Assembly alignment bam file: assembly1.bam (haplotype-resolved)  
+5. Assembly alignment bam file: assembly2.bam (haplotype-resolved)  
 6. Average read depth: the average read depth of the read file  
 7. Read file: read.bam (for high-depth-read calls only, need to modify the method to get high-depth regions)  
 8. A callset file: callset.vcf.gz  
 9. Referemce genome sequence file: reference_genome.fasta  
-10. and 11. Assembly sequence files: assembly1.fasta/.fa and assembly2.fasta/.fa (haplotype-resolved)
-12. and 13. liftover file: assembly1_liftover.bed and assembly2_liftover.bed (provided)
+10. Assembly sequence files: assembly1.fasta/.fa (haplotype-resolved)  
+11. Assembly sequence files: assembly2.fasta/.fa (haplotype-resolved)  
+12. liftover file: assembly1_liftover.bed (provided)  
+13. liftover file: assembly2_liftover.bed (provided)
 
 ## Usage
 
