@@ -64,6 +64,7 @@ def main():
     ##########################################################
     ##########################################################
     #build centromere dictionary
+    
     dict_centromere = validate.build_centro_dict(centromere_file)
     
     #build lists for excluded SV positions
@@ -91,7 +92,6 @@ def main():
     contig_name_list, contig_pos_list, contig_name_dict = build_map(chr_len, interval, liftover_file2)
     get_vali_info(output_dir, vcf_file, query_file2, 2, ref_file, interval, 
                   contig_name_list, contig_pos_list, contig_name_dict, memory_limit)
-    
     
     #validate by both haplotypes: return a dict containing validation info
     dict_comb = vali_info(output_dir, 
