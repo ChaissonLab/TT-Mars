@@ -3,6 +3,9 @@ import pysam
 import sys 
 import os
 import numpy as np
+import pybedtools
+
+#TODO: optimize SV filters
 
 #Get regions on ref where its not covered by at least one of the assembly
 def get_non_cover_regions(output_dir, assem_bam_file, hap, chr_list):
@@ -34,6 +37,40 @@ def get_non_cover_regions(output_dir, assem_bam_file, hap, chr_list):
                 if rec.reference_end > cur_end:
                     cur_end = rec.reference_end
     g.close()
+    
+#Get SV positions
+def get_sv_positions(output_dir, vcf_file):
+    f = pysam.VariantFile(vcf_file, 'r')
+    #create bedfile contains SVs' positions
+    g = open(output_dir + "SV_positions.bed", "w")
+    for counter, rec in enumerate(f.fetch()):
+        ref_name = rec.chrom
+        sv_type = rec.info['SVTYPE']
+        sv_len = rec.rlen
+        #TODOL double check the start for different types
+        sv_pos = rec.pos
+        sv_end = rec.stop
+        if sv_type not in ['DEL', 'INS', 'INV', 'DUP']:
+            continue
+        g.write(str(ref_name) + "\t")
+        g.write(str(sv_pos) + "\t")
+        g.write(str(sv_end))
+        g.write("\n")
+    g.close()
+    f.close()
+
+#Output filtered calls' info in non-covered regions
+def output_non_cov_call_info(output_dir, SV_positions_file, assem1_non_cov_regions_file, assem2_non_cov_regions_file):
+    SV_positions = pybedtools.BedTool(SV_positions_file)
+    assem1_non_cov_regions = pybedtools.BedTool(assem1_non_cov_regions_file)
+    assem2_non_cov_regions = pybedtools.BedTool(assem2_non_cov_regions_file)
+    
+    exclude_assem1_non_cover = SV_positions.intersect(assem1_non_cov_regions, u = True)
+    exclude_assem2_non_cover = SV_positions.intersect(assem2_non_cov_regions, u = True)
+    
+    exclude_assem1_non_cover.saveas(output_dir + 'exclude_assem1_non_cover.bed')
+    exclude_assem2_non_cover.saveas(output_dir + 'exclude_assem2_non_cover.bed')
+    
 
 #Get regions where read depth > 2 * avg_read_depth
 #For now, we filter calls by read depth
@@ -41,6 +78,7 @@ def get_non_cover_regions(output_dir, assem_bam_file, hap, chr_list):
 #TODO: Too slow here
 def get_high_depth_calls_info(output_dir, read_bam_file, vcf_file, avg_read_depth):
     sv_len_limit = 100000
+    avg_read_depth = float(avg_read_depth)
     
     samfile = pysam.AlignmentFile(read_bam_file, "rb")
     f = pysam.VariantFile(vcf_file,'r')
@@ -74,6 +112,7 @@ def get_high_depth_calls_info(output_dir, read_bam_file, vcf_file, avg_read_dept
             g.write(str(sv_end))
             g.write("\n")
     g.close()
+    f.close()
 
 def main():
     #get command line input
@@ -113,6 +152,15 @@ def main():
     #Output regions on ref where its not covered by at least one of the assembly
     get_non_cover_regions(output_dir, bam_file1, 1, chr_list)
     get_non_cover_regions(output_dir, bam_file2, 2, chr_list)
+    
+    #Output sv positions
+    get_sv_positions(output_dir, vcf_file)
+    
+    #Output filtered calls in non-covered regions
+    SV_positions_file = output_dir + "SV_positions.bed"
+    assem1_non_cov_regions_file = output_dir + "assem1_non_cov_regions.bed"
+    assem2_non_cov_regions_file = output_dir + "assem2_non_cov_regions.bed"
+    output_non_cov_call_info(output_dir, SV_positions_file, assem1_non_cov_regions_file, assem2_non_cov_regions_file)
     
     #Get regions where read depth > 2 * avg_read_depth
     get_high_depth_calls_info(output_dir, read_bam_file, vcf_file, avg_read_depth)
