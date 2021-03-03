@@ -27,12 +27,12 @@ def getQuerySeqRec(seq_name):
     return seq
 
 #get the most close 'interval(500)' before sv_pos
-def getRefStart(sv_pos):
+def getRefStart(sv_pos, interval):
     start = math.floor(sv_pos/interval) * interval
     return start
 
 #get the most close 'interval(500)' after sv_end
-def getRefEnd(sv_end):
+def getRefEnd(sv_end, interval):
     end = math.ceil(sv_end/interval) * interval
     return end
 
@@ -82,10 +82,12 @@ def write_err(output_file_name, message):
     
 #return chr name as an integer
 #X = 23, Y = 24
-def get_int_chr_name(name):
+def get_int_chr_name(name, if_hg38):
     #remove "chr"
     if if_hg38:
         chr_name = name[3:]
+    else:
+        chr_name = name
     
     if chr_name.upper() == 'X':
         int_name = 23
@@ -97,7 +99,7 @@ def get_int_chr_name(name):
     return int_name
     
 #build map
-def build_map(chr_len, interval, liftover_file):
+def build_map(chr_len, interval, liftover_file, if_hg38):
     contig_name_list = []
     contig_pos_list = []
     for i in range(1, 25):
@@ -114,7 +116,7 @@ def build_map(chr_len, interval, liftover_file):
         pre_contig_name = ""
         for line in f:
             record = line.strip().split()
-            int_ref_name = get_int_chr_name(record[4])
+            int_ref_name = get_int_chr_name(record[4], if_hg38)
             ref_pos = int(record[5])
             contig_pos = int(record[1])
 
@@ -139,7 +141,7 @@ def build_map(chr_len, interval, liftover_file):
 
 #get vcf file and run score_callset on each SV record
 def get_vali_info(output_dir, vcf_file, query_file, hap, ref_file, interval, 
-                  contig_name_list, contig_pos_list, contig_name_dict, memory_limit):
+                  contig_name_list, contig_pos_list, contig_name_dict, memory_limit, if_hg38):
     f = pysam.VariantFile(vcf_file,'r')
     #query_file = query_file2
     #hap = 2
@@ -182,11 +184,11 @@ def get_vali_info(output_dir, vcf_file, query_file, hap, ref_file, interval,
             ref_name = name
             ref_rec = ref_fasta_file.fetch(ref_name)
 
-        ref_start = getRefStart(sv_pos)
-        ref_end = getRefEnd(sv_end)
+        ref_start = getRefStart(sv_pos, interval)
+        ref_end = getRefEnd(sv_end, interval)
 
         #first level key: chr index as an int
-        int_ref_name = get_int_chr_name(ref_name)
+        int_ref_name = get_int_chr_name(ref_name, if_hg38)
         lo_list_index = int_ref_name - 1
         first_key = lo_list_index
 
@@ -467,14 +469,14 @@ def main():
     memory_limit = 50000
      
     #build map and get validation info haplotype 1
-    contig_name_list, contig_pos_list, contig_name_dict = build_map(chr_len, interval, liftover_file1)
+    contig_name_list, contig_pos_list, contig_name_dict = build_map(chr_len, interval, liftover_file1, if_hg38)
     get_vali_info(output_dir, vcf_file, query_file1, 1, ref_file, interval, 
-                  contig_name_list, contig_pos_list, contig_name_dict, memory_limit)
+                  contig_name_list, contig_pos_list, contig_name_dict, memory_limit, if_hg38)
     
     #build map and get validation info haplotype 2
-    contig_name_list, contig_pos_list, contig_name_dict = build_map(chr_len, interval, liftover_file2)
+    contig_name_list, contig_pos_list, contig_name_dict = build_map(chr_len, interval, liftover_file2, if_hg38)
     get_vali_info(output_dir, vcf_file, query_file2, 2, ref_file, interval, 
-                  contig_name_list, contig_pos_list, contig_name_dict, memory_limit)
+                  contig_name_list, contig_pos_list, contig_name_dict, memory_limit, if_hg38)
     
 
 #main function and pack all the steps by both haplotypes

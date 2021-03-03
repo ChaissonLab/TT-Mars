@@ -112,7 +112,7 @@ def check_tp(rela_len, rela_score):
     return result
 
 # build dictionary for validation
-def updateDict(dict_score, align_info, exclude_assem1_non_cover, exclude_assem2_non_cover, exclude_high_depth, dict_centromere):
+def updateDict(dict_score, align_info, exclude_assem1_non_cover, exclude_assem2_non_cover, exclude_high_depth, dict_centromere, chr_list, if_hg38):
     for record in align_info:
         #len > 30
         if int(record[3]) > 0 and abs(int(record[8])) > 30 and str(record[9]) in chr_list:
@@ -207,7 +207,7 @@ def updateDict(dict_score, align_info, exclude_assem1_non_cover, exclude_assem2_
     return dict_score
 
 #validate by both haplotypes
-def vali_info(output_dir, exclude_assem1_non_cover, exclude_assem2_non_cover, exclude_high_depth, assem1_info_file, assem2_info_file, dict_centromere):
+def vali_info(output_dir, exclude_assem1_non_cover, exclude_assem2_non_cover, exclude_high_depth, assem1_info_file, assem2_info_file, dict_centromere, chr_list, if_hg38):
     with open(output_dir + assem1_info_file) as f:
         reader = csv.reader(f, delimiter="\t")
         align_info_assem1 = list(reader)
@@ -219,8 +219,8 @@ def vali_info(output_dir, exclude_assem1_non_cover, exclude_assem2_non_cover, ex
     f.close()
 
     dict_comb = dict()
-    dict_comb = updateDict(dict_comb, align_info_assem1, exclude_assem1_non_cover, exclude_assem2_non_cover, exclude_high_depth, dict_centromere)
-    dict_comb = updateDict(dict_comb, align_info_assem2, exclude_assem1_non_cover, exclude_assem2_non_cover, exclude_high_depth, dict_centromere)
+    dict_comb = updateDict(dict_comb, align_info_assem1, exclude_assem1_non_cover, exclude_assem2_non_cover, exclude_high_depth, dict_centromere, chr_list, if_hg38)
+    dict_comb = updateDict(dict_comb, align_info_assem2, exclude_assem1_non_cover, exclude_assem2_non_cover, exclude_high_depth, dict_centromere, chr_list, if_hg38)
 
     return dict_comb
 
@@ -295,7 +295,9 @@ def main():
                           exclude_high_depth, 
                           "align_info_assem1_chrall.txt",
                           "align_info_assem2_chrall.txt", 
-                          dict_centromere)
+                          dict_centromere, 
+                          chr_list, 
+                          if_hg38)
     
     #write output
     write_output(output_dir, dict_comb)
