@@ -74,7 +74,7 @@ def main():
     get_conf_int.get_non_cover_regions(output_dir, bam_file2, 2, chr_list)
     
     #Get regions where read depth > 2 * avg_read_depth
-    get_conf_int.get_high_depth_calls_info(output_dir, read_bam_file, vcf_file)
+    get_conf_int.get_high_depth_calls_info(output_dir, read_bam_file, vcf_file, avg_read_depth)
     
     #get filtered sv info, using results from get_conf_int.py 
     exclude_assem1_non_cover, exclude_assem2_non_cover, exclude_high_depth = 

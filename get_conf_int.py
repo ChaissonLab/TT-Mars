@@ -39,16 +39,31 @@ def get_non_cover_regions(output_dir, assem_bam_file, hap, chr_list):
 #For now, we filter calls by read depth
 #In other words, here output calls having high read depth
 #TODO: Too slow here
-def get_high_depth_calls_info(output_dir, read_bam_file, vcf_file):
+def get_high_depth_calls_info(output_dir, read_bam_file, vcf_file, avg_read_depth):
+    sv_len_limit = 100000
+    
     samfile = pysam.AlignmentFile(read_bam_file, "rb")
     f = pysam.VariantFile(vcf_file,'r')
     #TODO: change open condition
-    g = open(output_dir + "exclude_high_depth.bed", "a")
+    g = open(output_dir + "exclude_high_depth.bed", "w")
     for counter, rec in enumerate(f.fetch()):
+        #test
+        #if counter > 250:
+        #    break
+        
         #get ref start and ref end
         name = rec.chrom
         sv_pos = rec.pos
         sv_end = rec.stop
+        sv_type = rec.info['SVTYPE']
+        if sv_type not in ['DEL', 'INS', 'INV', 'DUP']:
+            continue
+        
+        sv_len = abs(rec.info['SVLEN'][0]) 
+        if sv_len > sv_len_limit:
+            continue
+        
+        #print(sv_end - sv_pos)
         res = samfile.count_coverage(name, sv_pos, sv_end+1, quality_threshold = 0)
         #print(res)
         if round(np.sum(res)/(sv_end+1-sv_pos), 2) > 2*avg_read_depth:
@@ -100,7 +115,7 @@ def main():
     get_non_cover_regions(output_dir, bam_file2, 2, chr_list)
     
     #Get regions where read depth > 2 * avg_read_depth
-    get_high_depth_calls_info(output_dir, read_bam_file, vcf_file)
+    get_high_depth_calls_info(output_dir, read_bam_file, vcf_file, avg_read_depth)
     
 if __name__ == "__main__":
     main()
