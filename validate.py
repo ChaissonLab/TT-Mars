@@ -257,9 +257,9 @@ def main():
     output_dir = sys.argv[1] + "/"
     if_hg38_input = sys.argv[2]
     centromere_file = sys.argv[3]
-    exclude_assem1_non_cover_file = sys.argv[4]
-    exclude_assem2_non_cover_file = sys.argv[5]
-    exclude_high_depth_file = sys.argv[6]
+    #exclude_assem1_non_cover_file = sys.argv[4]
+    #exclude_assem2_non_cover_file = sys.argv[5]
+    #exclude_high_depth_file = sys.argv[6]
     
     #constants
     interval = 20
@@ -284,9 +284,9 @@ def main():
     dict_centromere = build_centro_dict(centromere_file)
     
     #build lists for excluded SV positions
-    exclude_assem1_non_cover, exclude_assem2_non_cover, exclude_high_depth = get_filtered_sv_pos(exclude_assem1_non_cover_file, 
-                                                                                                 exclude_assem2_non_cover_file, 
-                                                                                                 exclude_high_depth_file)
+    exclude_assem1_non_cover, exclude_assem2_non_cover, exclude_high_depth = get_filtered_sv_pos(output_dir + "exclude_assem1_non_cover.bed", 
+                                                                                                 output_dir + "exclude_assem2_non_cover.bed", 
+                                                                                                 output_dir + "exclude_high_depth.bed")
     
     #validate by both haplotypes
     dict_comb = vali_info(output_dir, 
