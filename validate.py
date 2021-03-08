@@ -95,20 +95,24 @@ def get_depth(ref_name, ref_pos, bam_file):
     return int(res[start:end])
 
 #check if true positive or not
-def check_tp(rela_len, rela_score):
+def check_tp(rela_len, rela_score, sv_type):
     result = True
-    if rela_score >= 0 and rela_score <= 2.5:
-        if rela_len >= -0.05*rela_score + 0.8 and rela_len <= 0.05*rela_score + 1.2:
-            result = True
+    if sv_type in ['DEL', 'INS']:
+        if rela_score >= 0 and rela_score <= 2.5:
+            if rela_len >= -0.05*rela_score + 0.8 and rela_len <= 0.05*rela_score + 1.2:
+                result = True
+            else:
+                result = False
+        elif rela_score > 2.5:
+            if rela_len >= 0.675 and rela_len <= 1.325:
+                result = True
+            else:
+                result = False
         else:
             result = False
-    elif rela_score > 2.5:
-        if rela_len >= 0.675 and rela_len <= 1.325:
-            result = True
-        else:
+    elif sv_type == 'INV':
+        if rela_score <= 0:
             result = False
-    else:
-        result = False
     return result
 
 # build dictionary for validation
@@ -142,12 +146,6 @@ def updateDict(dict_score, align_info, exclude_assem1_non_cover, exclude_assem2_
             if (ref_start > centro_start and ref_start < centro_end) or (ref_end > centro_start and ref_end < centro_end):
                 continue
 
-            #filter out call at high coverage location
-            #ref_start_depth = get_depth(ref_name, ref_start, bam_file)
-            #ref_end_depth = get_depth(ref_name, ref_end, bam_file)
-            #if ((ref_start_depth > 2 * avg_depth) or (ref_end_depth > 2 * avg_depth)):
-            #continue
-
             #start to build a dictionay: merge validation information from 2 haplotypes
             #TODO: solve the score/length = 0 problem
             #skip before score/length = 0
@@ -180,8 +178,8 @@ def updateDict(dict_score, align_info, exclude_assem1_non_cover, exclude_assem2_
                     old_rela_len = (float(dict_score[record[0]][5]) - float(dict_score[record[0]][6]))/(float(dict_score[record[0]][7]))
                     new_rela_len = (float(record[6]) - float(record[7]))/(float(record[8]))
 
-                    old_res = check_tp(old_rela_len, old_rela_score)
-                    new_res = check_tp(new_rela_len, new_rela_score)
+                    old_res = check_tp(old_rela_len, old_rela_score, record[4])
+                    new_res = check_tp(new_rela_len, new_rela_score, record[4])
 
                     if new_res and not old_res:
                         dict_score.update({record[0]: record[1:len(record)]})
@@ -197,10 +195,6 @@ def updateDict(dict_score, align_info, exclude_assem1_non_cover, exclude_assem2_
                     else:
                         old_rela_score = (float(dict_score[record[0]][1]) - float(dict_score[record[0]][0]))/abs(float(dict_score[record[0]][0]))
                         new_rela_score = (float(record[2]) - float(record[1]))/abs(float(record[1]))
-
-                      #test
-                        #if record[0] == "90":
-                        #	print(new_rela_len, old_rela_len)
 
                         if old_rela_score < new_rela_score:
                             dict_score.update({record[0]: record[1:len(record)]})
@@ -247,7 +241,7 @@ def write_output(output_dir, dict_comb):
         g.write(str(dict_comb[record][3]) + "\t")
         g.write(str(rela_len) + "\t")
         g.write(str(rela_score) + "\t")
-        g.write(str(check_tp(rela_len, rela_score)) + "\t")
+        g.write(str(check_tp(rela_len, rela_score, str(dict_comb[record][3]))) + "\t")
         g.write("\n")
     g.close()
 

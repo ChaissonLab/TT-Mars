@@ -116,6 +116,7 @@ def build_map(chr_len, interval, liftover_file, if_hg38):
         pre_contig_name = ""
         for line in f:
             record = line.strip().split()
+            
             int_ref_name = get_int_chr_name(record[4], if_hg38)
             ref_pos = int(record[5])
             contig_pos = int(record[1])
