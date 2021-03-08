@@ -4,7 +4,10 @@ import os
 import csv
 #import copy
 
-#file_name = "HG00096/mm2_hg38_asm5_woSed_assem2_sort.bam"
+#input: input bam file (sorted bam), output directory, if_hg38
+#output: output directory/output bam file (unsorted)
+
+#file_name = "/panfs/qcb-panasas/jianzhiy/data/assemblies/hgsvc2/HG00096/mm2_hg38_asm5_woSed_assem1_sort.bam"
 file_name = sys.argv[1]
 infile = pysam.AlignmentFile(file_name, "rb")
 #file not sorted

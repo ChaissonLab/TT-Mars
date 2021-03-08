@@ -9,7 +9,7 @@ import sys
   
 #get command line input
 #n = len(sys.argv)
-output_dir = sys.argv[1]
+output_dir = sys.argv[1] + "/"
 assembly_bam_file_hap1 = sys.argv[2]
 assembly_bam_file_hap2 = sys.argv[3]
 #print("\nName of Python script:", sys.argv[0])
