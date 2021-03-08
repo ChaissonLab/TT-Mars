@@ -164,7 +164,7 @@ def get_vali_info(output_dir, vcf_file, query_file, hap, ref_file, interval,
         sv_type = rec.info['SVTYPE']
 
         
-        if sv_type not in ['DEL', 'INS']:
+        if sv_type not in ['DEL', 'INS', 'INV']:
         #test INV
         #if sv_type not in ['INV']:
         #if sv_type != 'DEL' and sv_type != 'INS':
@@ -482,12 +482,12 @@ def get_vali_info(output_dir, vcf_file, query_file, hap, ref_file, interval,
 
             if len(str(query_frag)) > memory_limit or len(str(ref_frag)) > memory_limit:
                 message = "memory_limit"
-                write_err(output_file_name, message)
+                #write_err(output_file_name, message)
                 continue
 
             if len(str(query_frag)) == 0 or len(str(ref_frag)) == 0 or len(str(ref_afterSV_frag1)) + len(str(ref_inv_seq)) + len(str(ref_afterSV_frag2)) == 0:
                 message = "Wrong seq!!!"
-                write_err(output_file_name, message)
+                #write_err(output_file_name, message)
                 continue
 
             #TODO: find a appropriate alignment parameters
