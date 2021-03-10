@@ -97,7 +97,7 @@ def get_depth(ref_name, ref_pos, bam_file):
 #check if true positive or not
 def check_tp(rela_len, rela_score, sv_type):
     result = True
-    if sv_type in ['DEL', 'INS']:
+    if sv_type in ['DEL', 'INS', 'DUP', 'DUP:TANDEM']:
         if rela_score >= 0 and rela_score <= 2.5:
             if rela_len >= -0.05*rela_score + 0.8 and rela_len <= 0.05*rela_score + 1.2:
                 result = True
@@ -241,7 +241,7 @@ def write_output(output_dir, dict_comb):
         g.write(str(dict_comb[record][3]) + "\t")
         g.write(str(rela_len) + "\t")
         g.write(str(rela_score) + "\t")
-        g.write(str(check_tp(rela_len, rela_score, str(dict_comb[record][3]))) + "\t")
+        g.write(str(check_tp(rela_len, rela_score, str(dict_comb[record][3]))))
         g.write("\n")
     g.close()
 
