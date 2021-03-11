@@ -166,7 +166,7 @@ def get_vali_info(output_dir, vcf_file, query_file, hap, ref_file, interval,
     #hap = 2
     name_str = "assem" + str(hap)
     chromosome = "all"
-    output_file_name = output_dir + "align_info_" + name_str + "_chr" + chromosome + "_4best.txt"
+    output_file_name = output_dir + "align_info_" + name_str + "_chr" + chromosome + ".txt"
 
     query_fasta_file = pysam.FastaFile(query_file)
     ref_fasta_file = pysam.FastaFile(ref_file)
