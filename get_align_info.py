@@ -139,16 +139,34 @@ def build_map(chr_len, interval, liftover_file, if_hg38):
     f.close()
     return contig_name_list, contig_pos_list, contig_name_dict
 
+#get alignment score of given seq pair
+def get_align_score(seq1, seq2):
+    aligner = Align.PairwiseAligner()
+    aligner.mode = 'global'
+    aligner.match_score = 1
+    aligner.mismatch_score = -1
+    aligner.open_gap_score = -1
+    aligner.extend_gap_score = -0.5
+    #aligner.score_only = True
+    alignment_score = aligner.score(seq1, seq2)
+    return alignment_score
+
+#invert sequence
+def inversion_seq(seq):
+    inverted_seq = ''
+    for i in seq:
+        inverted_seq = i + inverted_seq
+    return inverted_seq
 
 #get vcf file and run score_callset on each SV record
 def get_vali_info(output_dir, vcf_file, query_file, hap, ref_file, interval, 
-                  contig_name_list, contig_pos_list, contig_name_dict, memory_limit, if_hg38):
+                  contig_name_list, contig_pos_list, contig_name_dict, memory_limit, if_hg38, chr_list):
     f = pysam.VariantFile(vcf_file,'r')
     #query_file = query_file2
     #hap = 2
     name_str = "assem" + str(hap)
     chromosome = "all"
-    output_file_name = output_dir + "align_info_" + name_str + "_chr" + chromosome + ".txt"
+    output_file_name = output_dir + "align_info_" + name_str + "_chr" + chromosome + "_4best.txt"
 
     query_fasta_file = pysam.FastaFile(query_file)
     ref_fasta_file = pysam.FastaFile(ref_file)
@@ -157,6 +175,9 @@ def get_vali_info(output_dir, vcf_file, query_file, hap, ref_file, interval,
     g = open(output_file_name, "w")
     for counter, rec in enumerate(f.fetch()):
         name = rec.chrom
+        
+        if name not in chr_list:
+            continue
 
         #choose target chr
         #if str(name) != chromosome:
@@ -164,12 +185,12 @@ def get_vali_info(output_dir, vcf_file, query_file, hap, ref_file, interval,
 
         sv_type = rec.info['SVTYPE']
 
-        
-        if sv_type not in ['DEL', 'INS', 'INV']:
-        #test INV
-        #if sv_type not in ['INV']:
+        #for testing purpose, include dup as tandem dup
+        #if sv_type not in ['DEL', 'INS', 'INV', 'DUP:TANDEM', 'DUP']:
+        #test INV DUP
+        if sv_type not in ['INV', 'DUP:TANDEM', 'DUP']:
         #if sv_type != 'DEL' and sv_type != 'INS':
-            print("Wrong type!")
+            #print("Wrong type!")
             continue
 
         #sv_len = abs(rec.info["SVLEN"][0])
@@ -202,9 +223,10 @@ def get_vali_info(output_dir, vcf_file, query_file, hap, ref_file, interval,
         if counter % 1000 == 0:
             print(counter)
 
-        #if ins or del
+        #if ins or del or tandem dup
         #Search for the best second_key_start and second_key_end in the regions
-        if sv_type == 'INS' or sv_type == 'DEL':
+        if sv_type in ['INS', 'DEL', 'DUP:TANDEM', 'DUP']:
+        #if sv_type == 'INS' or sv_type == 'DEL':
             region_len_m = 500
             min_diff_len = 100000000
             ref_start_best = ref_start
@@ -276,6 +298,125 @@ def get_vali_info(output_dir, vcf_file, query_file, hap, ref_file, interval,
             query_start = query_start_best
             query_end = query_end_best
         
+                
+#         elif sv_type == 'INV':        
+#             region_len_m = 500
+#             max_rela_score = -100000000
+#             ref_start_best = ref_start
+#             ref_end_best = ref_end
+#             query_start_best = None
+#             query_end_best = None
+#             start_contig_name_ctr = -1
+#             end_contig_name_ctr = -1
+#             cur_contig_name_ctr = -100
+
+#             neg_strand = False
+
+#             for ref_end_cand in range(ref_end, ref_end+region_len_m, interval):
+#                 for ref_start_cand in range(ref_start, ref_start-region_len_m, -interval):
+
+#                     #second_key_start = str(ref_start_cand)
+#                     #second_key_end = str(ref_end_cand)
+#                     second_key_start = ref_start_cand//interval
+#                     second_key_end = ref_end_cand//interval
+
+#                     start_contig_name_ctr_cand = contig_name_list[first_key][second_key_start]
+#                     end_contig_name_ctr_cand = contig_name_list[first_key][second_key_end]
+
+#                     if start_contig_name_ctr_cand == -1 or end_contig_name_ctr_cand == -1:
+#                         #print("wrong second key")
+#                         message = "wrong_sec_key"
+#                         #write_err(output_file_name, message, g)
+#                         continue
+
+#                     if start_contig_name_ctr_cand != end_contig_name_ctr_cand:
+#                         #print("Not same contig")
+#                         message = "not_same_contig"
+#                         #write_err(output_file_name, message, g)
+#                         continue
+
+#                     query_start = contig_pos_list[first_key][second_key_start]
+#                     query_end = contig_pos_list[first_key][second_key_end]
+
+#                     neg_strand_tep = False
+#                     #in case: negtive strand
+#                     if query_end < query_start:
+#                         tem = query_start
+#                         query_start = query_end
+#                         query_end = tem
+#                         neg_strand_tep = True
+
+#                     #take the best relative length to be the optimal interval
+#                     if cur_contig_name_ctr != start_contig_name_ctr_cand:
+#                         cur_contig_name_ctr == start_contig_name_ctr_cand
+#                         query_name = contig_name_dict[start_contig_name_ctr_cand]
+#                         query_rec = query_fasta_file.fetch(query_name)
+        
+#                     ref_frag = ref_rec[ref_start_cand:ref_end_cand]
+#                     ref_afterSV_frag1 = ref_rec[ref_start_cand:sv_pos]
+#                     ref_afterSV_frag2 = ref_rec[sv_end:ref_end_cand]
+#                     ref_inv_seq = ref_rec[sv_pos:sv_end]     
+#                     query_frag = query_rec[query_start:query_end]   
+                    
+#                     if neg_strand_tep:
+#                         from Bio.Seq import Seq
+#                         seq = Seq(query_frag)
+#                         query_frag = seq.reverse_complement()
+
+#                     #reversse and complement
+#                     from Bio.Seq import Seq
+#                     inv_seq = Seq(ref_inv_seq)
+#                     ref_inv_seq = inv_seq.reverse_complement()
+
+#                     #get to upper case
+#                     ref_frag = ref_frag.upper()
+#                     query_frag = query_frag.upper()
+#                     ref_inv_seq = ref_inv_seq.upper()
+#                     ref_afterSV_frag1 = ref_afterSV_frag1.upper()
+#                     ref_afterSV_frag2 = ref_afterSV_frag2.upper()
+
+#                     if len(str(query_frag)) > memory_limit or len(str(ref_frag)) > memory_limit:
+#                         message = "memory_limit"
+#                         #write_err(output_file_name, message)
+#                         continue
+
+#                     if len(str(query_frag)) == 0 or len(str(ref_frag)) == 0 or len(str(ref_afterSV_frag1)) + len(str(ref_inv_seq)) + len(str(ref_afterSV_frag2)) == 0:
+#                         message = "Wrong seq!!!"
+#                         #write_err(output_file_name, message)
+#                         continue
+                    
+#                     cur_before_score = get_align_score(str(query_frag), str(ref_frag))
+#                     cur_after_score = get_align_score(str(query_frag), str(ref_afterSV_frag1) + str(ref_inv_seq) + str(ref_afterSV_frag2))
+                    
+#                     if cur_before_score == 0:
+#                         continue
+#                     cur_rela_score = round((cur_after_score - cur_before_score)/abs(cur_before_score), 2)
+                    
+#                     if cur_rela_score > max_rela_score:
+#                         max_rela_score = cur_rela_score
+#                         ref_start_best = ref_start_cand
+#                         ref_end_best = ref_end_cand
+#                         query_start_best = query_start
+#                         query_end_best = query_end
+#                         start_contig_name_ctr = start_contig_name_ctr_cand
+#                         end_contig_name_ctr = end_contig_name_ctr_cand
+
+#                         if neg_strand_tep:
+#                             neg_strand = True
+#                         else:
+#                             neg_strand = False
+
+#             if query_start_best == None or query_end_best == None:
+#                 print("Wrong query pos")
+#                 message = "Wrong_query_pos"
+#                 #write_err(output_file_name, message, g)
+#                 continue
+
+#             ref_start = ref_start_best
+#             ref_end = ref_end_best
+#             query_start = query_start_best
+#             query_end = query_end_best
+        
         #if inv, no need to use the flexible interval
         #bc/ flexi int will be found by relative length
         elif sv_type == 'INV':
@@ -310,7 +451,7 @@ def get_vali_info(output_dir, vcf_file, query_file, hap, ref_file, interval,
                 tem = query_start
                 query_start = query_end
                 query_end = tem
-                neg_strand = True            
+                neg_strand = True    
                 
         #Get the sequences
         if ref_start == sv_pos:
@@ -384,7 +525,7 @@ def get_vali_info(output_dir, vcf_file, query_file, hap, ref_file, interval,
             #get correct query info format
 
         #case 2: INS
-        elif sv_type == "INS":
+        elif sv_type in ["INS"]:
             #query and ref seq fragment
             query_frag = query_rec[query_start:query_end]
             ref_frag = ref_rec[ref_start:ref_end]
@@ -435,7 +576,7 @@ def get_vali_info(output_dir, vcf_file, query_file, hap, ref_file, interval,
             aligner.extend_gap_score = -0.5
             #aligner.score_only = True
             alignment_beforeSV = aligner.score(str(query_frag), str(ref_frag))
-            alignment_afterSV = aligner.score(str(query_frag), str(ref_afterSV_frag1) + str(ref_afterSV_frag2))
+            alignment_afterSV = aligner.score(str(query_frag), str(ref_afterSV_frag1) + str(ins_seq) + str(ref_afterSV_frag2))
 
             #alignment_beforeSV = pairwise2.align.globalms(str(query_frag), str(ref_frag), 1, -1, -1, -0.5, score_only = True)
             #alignment_afterSV = pairwise2.align.globalms(str(query_frag), str(ref_afterSV_frag1) 
@@ -447,11 +588,15 @@ def get_vali_info(output_dir, vcf_file, query_file, hap, ref_file, interval,
             #query and ref seq fragment
             query_frag = query_rec[query_start:query_end]
             ref_frag = ref_rec[ref_start-region_len:ref_end+region_len]
-            #TODO: this is for DEL
-            #TODO: check +-1
             ref_afterSV_frag1 = ref_rec[ref_start-region_len:sv_pos]
             ref_afterSV_frag2 = ref_rec[sv_end:ref_end+region_len]
             ref_inv_seq = ref_rec[sv_pos:sv_end]
+            
+#             query_frag = query_rec[query_start:query_end]
+#             ref_frag = ref_rec[ref_start:ref_end]
+#             ref_afterSV_frag1 = ref_rec[ref_start:sv_pos]
+#             ref_afterSV_frag2 = ref_rec[sv_end:ref_end]
+#             ref_inv_seq = ref_rec[sv_pos:sv_end]
 
             #alignment starts here
 
@@ -473,6 +618,7 @@ def get_vali_info(output_dir, vcf_file, query_file, hap, ref_file, interval,
             from Bio.Seq import Seq
             inv_seq = Seq(ref_inv_seq)
             ref_inv_seq = inv_seq.reverse_complement()
+            #ref_inv_seq = inversion_seq(str(ref_inv_seq))
 
             #get to upper case
             ref_frag = ref_frag.upper()
@@ -503,7 +649,67 @@ def get_vali_info(output_dir, vcf_file, query_file, hap, ref_file, interval,
             alignment_beforeSV = aligner.score(str(query_frag), str(ref_frag))
             alignment_afterSV = aligner.score(str(query_frag), str(ref_afterSV_frag1) + str(ref_inv_seq)
                                     + str(ref_afterSV_frag2))
-            
+        
+        #case 4: tandem dup
+        elif sv_type in ['DUP:TANDEM', 'DUP']:
+            #query and ref seq fragment
+            query_frag = query_rec[query_start:query_end]
+            ref_frag = ref_rec[ref_start:ref_end]
+            #TODO: this is for DEL
+            #TODO: check +-1
+            ref_afterSV_frag1 = ref_rec[ref_start:sv_end]
+            ref_afterSV_frag2 = ref_rec[sv_end:ref_end]
+            dup_seq = ref_rec[sv_pos:sv_end]
+
+            #alignment starts here
+
+            if neg_strand:
+                from Bio.Seq import Seq
+                seq = Seq(query_frag)
+                query_frag = seq.reverse_complement()
+                #query_frag = query_frag.reverse_complement()
+
+            #get to upper case
+            ref_frag = ref_frag.upper()
+            ref_afterSV_frag1 = ref_afterSV_frag1.upper()
+            ref_afterSV_frag2 = ref_afterSV_frag2.upper()
+            dup_seq = dup_seq.upper()
+            query_frag = query_frag.upper()
+
+            #TODO: fragments too long will cause memory problem
+
+            if len(str(query_frag)) > memory_limit or len(str(ref_frag)) > memory_limit:
+                message = "memory_limit"
+                #write_err(output_file_name, message, g)
+                continue
+            if len(str(ref_afterSV_frag1)) + len(str(dup_seq)) + len(str(ref_afterSV_frag2)) > memory_limit:
+                message = "memory_limit"
+                #write_err(output_file_name, message, g)
+                continue
+
+            if len(str(query_frag)) == 0 or len(str(query_frag)) == 0 or len(str(ref_afterSV_frag1)) + len(str(dup_seq)) + len(str(ref_afterSV_frag2)) == 0:
+                message = "Wrong seq!!!"
+                #write_err(output_file_name, message, g)
+                continue
+
+            #TODO: find a appropriate alignment parameters
+            #paras: match, mismatch, open gap, extend gap
+            aligner = Align.PairwiseAligner()
+            aligner.mode = 'global'
+            aligner.match_score = 1
+            aligner.mismatch_score = -1
+            aligner.open_gap_score = -1
+            aligner.extend_gap_score = -0.5
+            #aligner.score_only = True
+            alignment_beforeSV = aligner.score(str(query_frag), str(ref_frag))
+            alignment_afterSV = aligner.score(str(query_frag), str(ref_afterSV_frag1) + str(dup_seq) + str(ref_afterSV_frag2))
+
+            #alignment_beforeSV = pairwise2.align.globalms(str(query_frag), str(ref_frag), 1, -1, -1, -0.5, score_only = True)
+            #alignment_afterSV = pairwise2.align.globalms(str(query_frag), str(ref_afterSV_frag1) 
+            #                        + str(ref_afterSV_frag2), 1, -1, -1, -0.5, score_only = True)
+            #get correct query info format        
+        
+        
             
         #Need to store the following information in order:
         # SV_index score_before score_after no_found SV_type hap:1 or 2
@@ -564,6 +770,20 @@ def main():
     if_hg38 = False
     if if_hg38_input == "True":
         if_hg38 = True
+    #chr names
+    chr_list = []
+    if if_hg38:
+        chr_list = ["chr1", "chr2", "chr3", "chr4", "chr5",
+                    "chr6", "chr7", "chr8", "chr9", "chr10",
+                    "chr11", "chr12", "chr13", "chr14", "chr15",
+                    "chr16", "chr17", "chr18", "chr19", "chr20",
+                    "chr21", "chr22", "chrX", "chrY"]
+    else:
+        chr_list = ["1", "2", "3", "4", "5",
+                    "6", "7", "8", "9", "10",
+                    "11", "12", "13", "14", "15",
+                    "16", "17", "18", "19", "20",
+                    "21", "22", "X", "Y"]
     #interval length
     interval = 20
     #approximate length of chromosomes
@@ -578,12 +798,12 @@ def main():
     #build map and get validation info haplotype 1
     contig_name_list, contig_pos_list, contig_name_dict = build_map(chr_len, interval, liftover_file1, if_hg38)
     get_vali_info(output_dir, vcf_file, query_file1, 1, ref_file, interval, 
-                  contig_name_list, contig_pos_list, contig_name_dict, memory_limit, if_hg38)
+                  contig_name_list, contig_pos_list, contig_name_dict, memory_limit, if_hg38, chr_list)
     
     #build map and get validation info haplotype 2
     contig_name_list, contig_pos_list, contig_name_dict = build_map(chr_len, interval, liftover_file2, if_hg38)
     get_vali_info(output_dir, vcf_file, query_file2, 2, ref_file, interval, 
-                  contig_name_list, contig_pos_list, contig_name_dict, memory_limit, if_hg38)
+                  contig_name_list, contig_pos_list, contig_name_dict, memory_limit, if_hg38, chr_list)
     
 
 #main function and pack all the steps by both haplotypes
