@@ -186,9 +186,9 @@ def get_vali_info(output_dir, vcf_file, query_file, hap, ref_file, interval,
         sv_type = rec.info['SVTYPE']
 
         #for testing purpose, include dup as tandem dup
-        #if sv_type not in ['DEL', 'INS', 'INV', 'DUP:TANDEM', 'DUP']:
+        if sv_type not in ['DEL', 'INS', 'INV', 'DUP:TANDEM', 'DUP']:
         #test INV DUP
-        if sv_type not in ['INV', 'DUP:TANDEM', 'DUP']:
+        #if sv_type not in ['INV', 'DUP:TANDEM', 'DUP']:
         #if sv_type != 'DEL' and sv_type != 'INS':
             #print("Wrong type!")
             continue
@@ -201,7 +201,7 @@ def get_vali_info(output_dir, vcf_file, query_file, hap, ref_file, interval,
         sv_end = rec.stop
         sv_ref_seq = rec.ref
         #TODO: update here when multi-calls in one records allowed
-        sv_query_seq = rec.alts[0]
+        #sv_query_seq = rec.alts[0]
 
         #find given fragment (on ref) to queries
 
@@ -531,57 +531,57 @@ def get_vali_info(output_dir, vcf_file, query_file, hap, ref_file, interval,
             ref_frag = ref_rec[ref_start:ref_end]
             #TODO: this is for DEL
             #TODO: check +-1
-            ref_afterSV_frag1 = ref_rec[ref_start:sv_pos]
-            ref_afterSV_frag2 = ref_rec[sv_end:ref_end]
-            ins_seq = sv_query_seq
+#             ref_afterSV_frag1 = ref_rec[ref_start:sv_pos]
+#             ref_afterSV_frag2 = ref_rec[sv_end:ref_end]
+#             ins_seq = sv_query_seq
 
-            #alignment starts here
+#             #alignment starts here
 
-            if neg_strand:
-                from Bio.Seq import Seq
-                seq = Seq(query_frag)
-                query_frag = seq.reverse_complement()
-                #query_frag = query_frag.reverse_complement()
+#             if neg_strand:
+#                 from Bio.Seq import Seq
+#                 seq = Seq(query_frag)
+#                 query_frag = seq.reverse_complement()
+#                 #query_frag = query_frag.reverse_complement()
 
-            #get to upper case
-            ref_frag = ref_frag.upper()
-            ref_afterSV_frag1 = ref_afterSV_frag1.upper()
-            ref_afterSV_frag2 = ref_afterSV_frag2.upper()
-            ins_seq = ins_seq.upper()
-            query_frag = query_frag.upper()
+#             #get to upper case
+#             ref_frag = ref_frag.upper()
+#             ref_afterSV_frag1 = ref_afterSV_frag1.upper()
+#             ref_afterSV_frag2 = ref_afterSV_frag2.upper()
+#             ins_seq = ins_seq.upper()
+#             query_frag = query_frag.upper()
 
-            #TODO: fragments too long will cause memory problem
+#             #TODO: fragments too long will cause memory problem
 
-            if len(str(query_frag)) > memory_limit or len(str(ref_frag)) > memory_limit:
-                message = "memory_limit"
-                #write_err(output_file_name, message, g)
-                continue
-            if len(str(ref_afterSV_frag1)) + len(str(ins_seq)) + len(str(ref_afterSV_frag2)) > memory_limit:
-                message = "memory_limit"
-                #write_err(output_file_name, message, g)
-                continue
+#             if len(str(query_frag)) > memory_limit or len(str(ref_frag)) > memory_limit:
+#                 message = "memory_limit"
+#                 #write_err(output_file_name, message, g)
+#                 continue
+#             if len(str(ref_afterSV_frag1)) + len(str(ins_seq)) + len(str(ref_afterSV_frag2)) > memory_limit:
+#                 message = "memory_limit"
+#                 #write_err(output_file_name, message, g)
+#                 continue
 
-            if len(str(query_frag)) == 0 or len(str(query_frag)) == 0 or len(str(ref_afterSV_frag1)) + len(str(ins_seq)) + len(str(ref_afterSV_frag2)) == 0:
-                message = "Wrong seq!!!"
-                #write_err(output_file_name, message, g)
-                continue
+#             if len(str(query_frag)) == 0 or len(str(query_frag)) == 0 or len(str(ref_afterSV_frag1)) + len(str(ins_seq)) + len(str(ref_afterSV_frag2)) == 0:
+#                 message = "Wrong seq!!!"
+#                 #write_err(output_file_name, message, g)
+#                 continue
 
-            #TODO: find a appropriate alignment parameters
-            #paras: match, mismatch, open gap, extend gap
-            aligner = Align.PairwiseAligner()
-            aligner.mode = 'global'
-            aligner.match_score = 1
-            aligner.mismatch_score = -1
-            aligner.open_gap_score = -1
-            aligner.extend_gap_score = -0.5
-            #aligner.score_only = True
-            alignment_beforeSV = aligner.score(str(query_frag), str(ref_frag))
-            alignment_afterSV = aligner.score(str(query_frag), str(ref_afterSV_frag1) + str(ins_seq) + str(ref_afterSV_frag2))
+#             #TODO: find a appropriate alignment parameters
+#             #paras: match, mismatch, open gap, extend gap
+#             aligner = Align.PairwiseAligner()
+#             aligner.mode = 'global'
+#             aligner.match_score = 1
+#             aligner.mismatch_score = -1
+#             aligner.open_gap_score = -1
+#             aligner.extend_gap_score = -0.5
+#             #aligner.score_only = True
+#             alignment_beforeSV = aligner.score(str(query_frag), str(ref_frag))
+#             alignment_afterSV = aligner.score(str(query_frag), str(ref_afterSV_frag1) + str(ins_seq) + str(ref_afterSV_frag2))
 
-            #alignment_beforeSV = pairwise2.align.globalms(str(query_frag), str(ref_frag), 1, -1, -1, -0.5, score_only = True)
-            #alignment_afterSV = pairwise2.align.globalms(str(query_frag), str(ref_afterSV_frag1) 
-            #                        + str(ref_afterSV_frag2), 1, -1, -1, -0.5, score_only = True)
-            #get correct query info format
+            #for INS, not using relative score
+            alignment_beforeSV = 1
+            alignment_afterSV = 1
+
 
         #case 3: INV
         elif sv_type == "INV":
