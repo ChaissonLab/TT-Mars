@@ -582,7 +582,6 @@ def get_vali_info(output_dir, vcf_file, query_file, hap, ref_file, interval,
             alignment_beforeSV = 1
             alignment_afterSV = 1
 
-
         #case 3: INV
         elif sv_type == "INV":
             #query and ref seq fragment
