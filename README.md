@@ -30,8 +30,9 @@ python ttmars.py output_dir if_hg38 centromere_positions.bed assembly1.bam assem
 
 ## Example Output
 
-ttmars_res.txt: chr start end type relative_length relative_score validation_result  
-Example: chr1	893792	893827	DEL	1.03	3.18	True
+ttmars_res.txt:  
+(chr start end type relative_length relative_score validation_result)  
+chr1	893792	893827	DEL	1.03	3.18	True
 
 ## Available Data
 
