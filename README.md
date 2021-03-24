@@ -35,6 +35,13 @@ Example: chr1	893792	893827	DEL	1.03	3.18	True
 
 ## Available Data
 
-### Liftover files:  
-HG00096: https://ndownloader.figshare.com/files/26663234 https://ndownloader.figshare.com/files/26663231
-Assemblies:  
+### Liftover files and assemblies  
+| Samples      | Liftover Hap1 | Liftover Hap2     | Assembly Hap1 | Assembly Hap2     |
+| :----:      |    :----:   |        :----: |    :----:   |        :----: |
+| HG00096 | https://ndownloader.figshare.com/files/26663234 | https://ndownloader.figshare.com/files/26663231 |   |      |
+| HG00171 |  |  |   |      |
+| HG00513 |  |  |   |      |
+| HG00731 |  |  |   |      |
+| HG00732 |  |  |   |      |
+| HG00864 |  |  |   |      |
+| HG01596 |  |  |   |      |
