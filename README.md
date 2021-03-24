@@ -39,9 +39,10 @@ Example: chr1	893792	893827	DEL	1.03	3.18	True
 | Samples      | Liftover Hap1 | Liftover Hap2     | Assembly Hap1 | Assembly Hap2     |
 | :----:      |    :----:   |        :----: |    :----:   |        :----: |
 | HG00096 | https://ndownloader.figshare.com/files/26663234 | https://ndownloader.figshare.com/files/26663231 |   |      |
-| HG00171 |  |  |   |      |
-| HG00513 |  |  |   |      |
-| HG00731 |  |  |   |      |
-| HG00732 |  |  |   |      |
-| HG00864 |  |  |   |      |
-| HG01596 |  |  |   |      |
+| HG00171 | https://ndownloader.figshare.com/files/27072881 | https://ndownloader.figshare.com/files/27072878 |   |      |
+| HG00513 | https://ndownloader.figshare.com/files/27073232 | https://ndownloader.figshare.com/files/27073241 |   |      |
+| HG00731 | https://ndownloader.figshare.com/files/27073718 | https://ndownloader.figshare.com/files/27073721 |   |      |
+| HG00732 | https://ndownloader.figshare.com/files/27074015 | https://ndownloader.figshare.com/files/27074018 |   |      |
+| HG00864 | https://ndownloader.figshare.com/files/27076040 | https://ndownloader.figshare.com/files/27076085 |   |      |
+| HG01596 | https://ndownloader.figshare.com/files/27076994 | https://ndownloader.figshare.com/files/27077000 |   |      |
+| HG03009 |  |  |   |      |
