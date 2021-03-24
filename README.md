@@ -35,6 +35,6 @@ Example: chr1	893792	893827	DEL	1.03	3.18	True
 
 ## Available Data
 
-Liftover files: HG00096: https://doi.org/10.6084/m9.figshare.14139632  
-Reads:  
+### Liftover files:  
+HG00096: https://ndownloader.figshare.com/files/26663234 https://ndownloader.figshare.com/files/26663231
 Assemblies:  
