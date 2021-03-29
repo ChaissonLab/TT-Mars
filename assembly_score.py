@@ -78,7 +78,7 @@ def parse_reads(output_file_name, contig_list, interval_len, consume_ref, cut_of
     #     #test
     #     contig_ctr += 1
     #     print(contig_ctr)
-    #     print(chr_name)
+        print(chr_name)
         contig_len = contig[1]
         #test
         #stop when parsed no_of_reads
@@ -172,8 +172,10 @@ def parse_reads(output_file_name, contig_list, interval_len, consume_ref, cut_of
                         #test
                         #print(cur_start_pos)
                         bad_read_ctr += 1
-            #write score
-            write_score(chr_name, cur_start_pos, cur_end_pos, 1 - round(bad_read_ctr/valid_ol_reads_ctr, 2), g)
+                #write score
+                write_score(chr_name, cur_start_pos, cur_end_pos, 1 - round(bad_read_ctr/valid_ol_reads_ctr, 2), g)
+            else:
+                write_score(chr_name, cur_start_pos, cur_end_pos, 0, g)
 
             #test
             #if bad_read_ctr > 0:
