@@ -29,12 +29,16 @@ def main():
     query_file2 = sys.argv[11]
     liftover_file1 = sys.argv[12]
     liftover_file2 = sys.argv[13]
+    assem_score_file1 = sys.argv[14]
+    assem_score_file2 = sys.argv[15]
     
     ##########################################################
     ##########################################################
     #constants
     #liftover interval
     interval = 20
+    #assembly score interval length
+    assem_interval_len = 100
     if_hg38 = False
     if if_hg38_input == "True":
         if_hg38 = True
@@ -66,21 +70,21 @@ def main():
     
     #build lists for excluded SV positions
     
-    #Output regions on ref where its not covered by at least one of the assembly
-    get_conf_int.get_non_cover_regions(output_dir, bam_file1, 1, chr_list)
-    get_conf_int.get_non_cover_regions(output_dir, bam_file2, 2, chr_list)
+#     #Output regions on ref where its not covered by at least one of the assembly
+#     get_conf_int.get_non_cover_regions(output_dir, bam_file1, 1, chr_list)
+#     get_conf_int.get_non_cover_regions(output_dir, bam_file2, 2, chr_list)
     
-    #Get regions where read depth > 2 * avg_read_depth
-    get_conf_int.get_high_depth_calls_info(output_dir, read_bam_file, vcf_file, avg_read_depth)
+#     #Get regions where read depth > 2 * avg_read_depth
+#     get_conf_int.get_high_depth_calls_info(output_dir, read_bam_file, vcf_file, avg_read_depth)
     
-    #Output sv positions
-    get_conf_int.get_sv_positions(output_dir, vcf_file)
+#     #Output sv positions
+#     get_conf_int.get_sv_positions(output_dir, vcf_file)
     
-    #Output filtered calls in non-covered regions
-    SV_positions_file = output_dir + "SV_positions.bed"
-    assem1_non_cov_regions_file = output_dir + "assem1_non_cov_regions.bed"
-    assem2_non_cov_regions_file = output_dir + "assem2_non_cov_regions.bed"
-    get_conf_int.output_non_cov_call_info(output_dir, SV_positions_file, assem1_non_cov_regions_file, assem2_non_cov_regions_file)
+#     #Output filtered calls in non-covered regions
+#     SV_positions_file = output_dir + "SV_positions.bed"
+#     assem1_non_cov_regions_file = output_dir + "assem1_non_cov_regions.bed"
+#     assem2_non_cov_regions_file = output_dir + "assem2_non_cov_regions.bed"
+#     get_conf_int.output_non_cov_call_info(output_dir, SV_positions_file, assem1_non_cov_regions_file, assem2_non_cov_regions_file)
     
     #get filtered sv info, using results from get_conf_int.py 
     exclude_assem1_non_cover, exclude_assem2_non_cover, exclude_high_depth = validate.get_filtered_sv_pos(output_dir + "exclude_assem1_non_cover.bed", 
@@ -91,12 +95,16 @@ def main():
     
     #build map and get validation info haplotype 1
     contig_name_list, contig_pos_list, contig_name_dict = get_align_info.build_map(chr_len, interval, liftover_file1, if_hg38)
+    assembly_int_score_list, assembly_contig_name_dict = get_align_info.build_assem_score(assem_score_file1, query_file1, assem_interval_len)
     get_align_info.get_vali_info(output_dir, vcf_file, query_file1, 1, ref_file, interval, 
-                  contig_name_list, contig_pos_list, contig_name_dict, memory_limit, if_hg38, chr_list)
+                  contig_name_list, contig_pos_list, contig_name_dict, memory_limit, if_hg38, chr_list, 
+                                 assembly_int_score_list, assembly_contig_name_dict, assem_interval_len)
     #build map and get validation info haplotype 2
     contig_name_list, contig_pos_list, contig_name_dict = get_align_info.build_map(chr_len, interval, liftover_file2, if_hg38)
+    assembly_int_score_list, assembly_contig_name_dict = get_align_info.build_assem_score(assem_score_file2, query_file2, assem_interval_len)
     get_align_info.get_vali_info(output_dir, vcf_file, query_file2, 2, ref_file, interval, 
-                  contig_name_list, contig_pos_list, contig_name_dict, memory_limit, if_hg38, chr_list)
+                  contig_name_list, contig_pos_list, contig_name_dict, memory_limit, if_hg38, chr_list, 
+                                 assembly_int_score_list, assembly_contig_name_dict, assem_interval_len)
     
     #validation by both haplotypes: a dict containing validation info
     

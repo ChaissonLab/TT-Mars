@@ -158,9 +158,62 @@ def inversion_seq(seq):
         inverted_seq = i + inverted_seq
     return inverted_seq
 
+#get contigs names and lengths of query file
+def get_contig_list(query_file):
+    contig_list = []
+    for seq_record in SeqIO.parse(query_file, "fasta"):
+        contig_list.append([seq_record.id, len(seq_record)])
+    return contig_list
+
+#get assembly score information
+def build_assem_score(assem_score_file, query_file, assem_interval_len):
+    #contigs name and length
+    query_contig_list = get_contig_list(query_file)
+    #{contig name: contig name ctr}
+    assembly_contig_name_dict = dict()
+    #contig name ctr: index of contig name in assembly_int_score_list
+    #start position: every interval length (100)
+    #score in interger of the interval: 0-100
+    assembly_int_score_list = []
+    
+    #build list and dict
+    for counter, contig in enumerate(query_contig_list):
+        assembly_contig_name_dict[contig[0]] = counter
+        assembly_int_score_list.append(np.zeros(int(contig[1]/assem_interval_len) + 1, dtype='int8'))
+    
+    with open(assem_score_file) as f:
+        for line in f:
+            #contig name, start pos, end pos, score
+            record = line.strip().split()
+            cur_contig_name = str(record[0])
+            cur_start_pos = int(record[1])
+            cur_end_pos = int(record[2])
+            cur_score = int(100*float(record[3]))
+            
+            cur_contig_ctr = assembly_contig_name_dict[cur_contig_name]
+            assembly_int_score_list[cur_contig_ctr][cur_start_pos//assem_interval_len] = cur_score        
+    
+    return assembly_int_score_list, assembly_contig_name_dict
+
+#calculate average assembly score at the region covered by an SV
+def get_assembly_score(query_name, query_start, query_end, assembly_int_score_list, 
+                       assembly_contig_name_dict, assem_interval_len):
+    region_start_index = math.floor(int(query_start)/assem_interval_len)
+    region_end_index = math.ceil(int(query_end)/assem_interval_len) - 1
+    contig_ctr = assembly_contig_name_dict[str(query_name)]
+    
+    total_score = 0
+    for i in range(region_start_index, region_end_index + 1):
+        cur_score = assembly_int_score_list[contig_ctr][i]
+        total_score += cur_score
+    avg_score = total_score/(region_end_index - region_start_index + 1)
+    
+    return avg_score
+
 #get vcf file and run score_callset on each SV record
 def get_vali_info(output_dir, vcf_file, query_file, hap, ref_file, interval, 
-                  contig_name_list, contig_pos_list, contig_name_dict, memory_limit, if_hg38, chr_list):
+                  contig_name_list, contig_pos_list, contig_name_dict, memory_limit, 
+                  if_hg38, chr_list, assembly_int_score_list, assembly_contig_name_dict, assem_interval_len):
     f = pysam.VariantFile(vcf_file,'r')
     #query_file = query_file2
     #hap = 2
@@ -472,6 +525,10 @@ def get_vali_info(output_dir, vcf_file, query_file, hap, ref_file, interval,
             #write_err(output_file_name, message, g)
             continue
 
+        ##calculate average assembly score at the region covered by an SV
+        assembly_score = get_assembly_score(query_name, query_start, query_end, assembly_int_score_list,
+                                            assembly_contig_name_dict, assem_interval_len)
+        
         #case 1: DEL
         if sv_type == "DEL":
             #query and ref seq fragment
@@ -748,6 +805,7 @@ def get_vali_info(output_dir, vcf_file, query_file, hap, ref_file, interval,
         g.write(str(ref_end) + "\t")
         g.write(str(sv_type) + "\t")
         g.write("noerr" + "\t")
+        g.write(str(assembly_score))
         g.write("\n")
     g.close()
 
@@ -764,6 +822,8 @@ def main():
     liftover_file1 = sys.argv[6]
     liftover_file2 = sys.argv[7]
     if_hg38_input = sys.argv[8]
+    assem_score_file1 = sys.argv[9]
+    assem_score_file2 = sys.argv[10]
 
     #constants
     if_hg38 = False
@@ -785,6 +845,8 @@ def main():
                     "21", "22", "X", "Y"]
     #interval length
     interval = 20
+    #assembly score interval length
+    assem_interval_len = 100
     #approximate length of chromosomes
     chr_len = [250000000, 244000000, 199000000, 192000000, 182000000, 
                 172000000, 160000000, 147000000, 142000000, 136000000, 
@@ -796,13 +858,21 @@ def main():
      
     #build map and get validation info haplotype 1
     contig_name_list, contig_pos_list, contig_name_dict = build_map(chr_len, interval, liftover_file1, if_hg38)
+    
+    assembly_int_score_list, assembly_contig_name_dict = build_assem_score(assem_score_file1, query_file1, assem_interval_len)
+    
     get_vali_info(output_dir, vcf_file, query_file1, 1, ref_file, interval, 
-                  contig_name_list, contig_pos_list, contig_name_dict, memory_limit, if_hg38, chr_list)
+                  contig_name_list, contig_pos_list, contig_name_dict, memory_limit, 
+                  if_hg38, chr_list, assembly_int_score_list, assembly_contig_name_dict, assem_interval_len)
     
     #build map and get validation info haplotype 2
     contig_name_list, contig_pos_list, contig_name_dict = build_map(chr_len, interval, liftover_file2, if_hg38)
+    
+    assembly_int_score_list, assembly_contig_name_dict = build_assem_score(assem_score_file2, query_file2, assem_interval_len)
+    
     get_vali_info(output_dir, vcf_file, query_file2, 2, ref_file, interval, 
-                  contig_name_list, contig_pos_list, contig_name_dict, memory_limit, if_hg38, chr_list)
+                  contig_name_list, contig_pos_list, contig_name_dict, memory_limit,
+                  if_hg38, chr_list, assembly_int_score_list, assembly_contig_name_dict, assem_interval_len)
     
 
 #main function and pack all the steps by both haplotypes

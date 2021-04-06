@@ -151,7 +151,8 @@ def parse_reads(output_file_name, contig_list, interval_len, consume_ref, cut_of
             for cur_read in ol_reads:
                 #test
                 #print(cur_read.reference_start, cur_read.reference_end)
-                if cur_read.reference_end < cur_start_pos or cur_read.reference_start >= cur_end_pos:
+                #if cur_read.reference_end < cur_start_pos or cur_read.reference_start >= cur_end_pos:
+                if cur_read.reference_end < (cur_end_pos - 1) or cur_read.reference_start > cur_start_pos:
                     continue
                 valid_ol_reads_ctr += 1
                 cur_cigar_tuples = cur_read.cigartuples

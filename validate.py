@@ -244,7 +244,8 @@ def write_output(output_dir, dict_comb):
         g.write(str(dict_comb[record][3]) + "\t")
         g.write(str(rela_len) + "\t")
         g.write(str(rela_score) + "\t")
-        g.write(str(check_tp(rela_len, rela_score, str(dict_comb[record][3]))))
+        g.write(str(check_tp(rela_len, rela_score, str(dict_comb[record][3]))) + "\t")
+        g.write(str(dict_comb[record][15]))
         g.write("\n")
     g.close()
 
