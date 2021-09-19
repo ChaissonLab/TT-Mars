@@ -163,7 +163,7 @@ def main():
     output_non_cov_call_info(output_dir, SV_positions_file, assem1_non_cov_regions_file, assem2_non_cov_regions_file)
     
     #Get regions where read depth > 2 * avg_read_depth
-    get_high_depth_calls_info(output_dir, read_bam_file, vcf_file, avg_read_depth)
+#     get_high_depth_calls_info(output_dir, read_bam_file, vcf_file, avg_read_depth)
     
 if __name__ == "__main__":
     main()
