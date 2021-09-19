@@ -37,13 +37,15 @@ chr1	893792	893827	DEL	1.03	3.18	True
 ## Available Data
 
 ### Liftover files and assemblies  
-| Samples      | Liftover Hap1 | Liftover Hap2     | Assembly Liftover Hap1 | Assembly Liftover Hap2     |
+| Samples      | Reference Liftover Hap1 | Reference Liftover Hap2 | Assembly Liftover Hap1 | Assembly Liftover Hap2 |
 | :----:      |    :----:   |        :----: |    :----:   |        :----: |
-| HG00096 | https://ndownloader.figshare.com/files/26663234 | https://ndownloader.figshare.com/files/26663231 |   |      |
-| HG00171 | https://ndownloader.figshare.com/files/27072881 | https://ndownloader.figshare.com/files/27072878 |   |      |
-| HG00513 | https://ndownloader.figshare.com/files/27073232 | https://ndownloader.figshare.com/files/27073241 |   |      |
-| HG00731 | https://ndownloader.figshare.com/files/27073718 | https://ndownloader.figshare.com/files/27073721 |   |      |
-| HG00732 | https://ndownloader.figshare.com/files/27074015 | https://ndownloader.figshare.com/files/27074018 |   |      |
-| HG00864 | https://ndownloader.figshare.com/files/27076040 | https://ndownloader.figshare.com/files/27076085 |   |      |
-| HG01596 | https://ndownloader.figshare.com/files/27076994 | https://ndownloader.figshare.com/files/27077000 |   |      |
-| HG03009 |  |  |   |      |
+| HG00096 | https://figshare.com/ndownloader/files/30817390 | https://figshare.com/ndownloader/files/30817384 | https://figshare.com/ndownloader/files/30817387  |  https://figshare.com/ndownloader/files/30817381   |
+| HG00171 | https://figshare.com/ndownloader/files/30817402  | https://figshare.com/ndownloader/files/30817396 |  https://figshare.com/ndownloader/files/30817399 |  https://figshare.com/ndownloader/files/30817393    |
+| HG00513 | https://figshare.com/ndownloader/files/30817411  | https://figshare.com/ndownloader/files/30817405 | https://figshare.com/ndownloader/files/30817408  |   https://figshare.com/ndownloader/files/30817414   |
+| HG00731 |  https://figshare.com/ndownloader/files/30817426 | https://figshare.com/ndownloader/files/30817420 | https://figshare.com/ndownloader/files/30817423  |  https://figshare.com/ndownloader/files/30817417    |
+| HG00732 |  https://figshare.com/ndownloader/files/30817435 | https://figshare.com/ndownloader/files/30817429 | https://figshare.com/ndownloader/files/30817432  |   https://figshare.com/ndownloader/files/30817438   |
+| HG00864 |  https://figshare.com/ndownloader/files/30817450 | https://figshare.com/ndownloader/files/30817444 | https://figshare.com/ndownloader/files/30817447  |   https://figshare.com/ndownloader/files/30817441   |
+| HG01114 |  https://figshare.com/ndownloader/files/30817459 | https://figshare.com/ndownloader/files/30817453 |  https://figshare.com/ndownloader/files/30817456 |   https://figshare.com/ndownloader/files/30817462   |
+| HG01505 | https://figshare.com/ndownloader/files/30817471  | https://figshare.com/ndownloader/files/30817465 | https://figshare.com/ndownloader/files/30817468  |   https://figshare.com/ndownloader/files/30817474   |
+| HG01596 |  https://figshare.com/ndownloader/files/30817486 | https://figshare.com/ndownloader/files/30817480 | https://figshare.com/ndownloader/files/30817483  |   https://figshare.com/ndownloader/files/30817477   |
+| HG03009 | https://figshare.com/ndownloader/files/30817498 | https://figshare.com/ndownloader/files/30817492 |  https://figshare.com/ndownloader/files/30817495 |   https://figshare.com/ndownloader/files/30817489   |
