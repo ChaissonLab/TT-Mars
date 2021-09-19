@@ -37,7 +37,7 @@ chr1	893792	893827	DEL	1.03	3.18	True
 ## Available Data
 
 ### Liftover files and assemblies  
-| Samples      | Liftover Hap1 | Liftover Hap2     | Assembly Hap1 | Assembly Hap2     |
+| Samples      | Liftover Hap1 | Liftover Hap2     | Assembly Liftover Hap1 | Assembly Liftover Hap2     |
 | :----:      |    :----:   |        :----: |    :----:   |        :----: |
 | HG00096 | https://ndownloader.figshare.com/files/26663234 | https://ndownloader.figshare.com/files/26663231 |   |      |
 | HG00171 | https://ndownloader.figshare.com/files/27072881 | https://ndownloader.figshare.com/files/27072878 |   |      |
