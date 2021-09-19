@@ -8,7 +8,7 @@ A sequence content based structural variants (SVs) validation method which aims 
 Python 3 packages: pysam (https://github.com/pysam-developers/pysam).  
 Softwares: samtools (https://github.com/samtools/samtools), samliftover (https://github.com/mchaisso/mcutils).
 
-## Input
+## Positional parameters
 
 1. Output directory  
 2. if hg38: if reference is hg38 (True/False). If False, TT-Mars will use hs37d5 as reference  
