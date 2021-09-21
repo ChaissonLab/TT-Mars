@@ -54,17 +54,9 @@ if seq_resolved_input == "True":
 #chr names
 chr_list = []
 if if_hg38:
-    chr_list = ["chr1", "chr2", "chr3", "chr4", "chr5",
-                "chr6", "chr7", "chr8", "chr9", "chr10",
-                "chr11", "chr12", "chr13", "chr14", "chr15",
-                "chr16", "chr17", "chr18", "chr19", "chr20",
-                "chr21", "chr22", "chrX"]
+    chr_list = ["chrX"]
 else:
-    chr_list = ["1", "2", "3", "4", "5",
-                "6", "7", "8", "9", "10",
-                "11", "12", "13", "14", "15",
-                "16", "17", "18", "19", "20",
-                "21", "22", "X"]
+    chr_list = ["X"]
 #approximate length of chromosomes
 chr_len = [250000000, 244000000, 199000000, 192000000, 182000000, 
             172000000, 160000000, 147000000, 142000000, 136000000, 
@@ -158,8 +150,8 @@ def second_filter(sv):
         
     #non-cov
     list_to_check = [str(ref_name), str(sv_pos), str(sv_stop)]
-    #if sv in high-depth regions or non-covered regions, skip
-    if validate.check_exclude(list_to_check, exclude_assem1_non_cover, exclude_assem2_non_cover):
+    #if sv in non-covered regions, skip
+    if validate.check_exclude_chrx(list_to_check, exclude_assem1_non_cover, exclude_assem2_non_cover):
         sv.is_sec_fil = True
         return True
     
@@ -178,10 +170,10 @@ def third_filter(sv):
 
 #get validation info
 def write_vali_info(sv_list):
-    g = open(output_dir + "ttmars_res.txt", "w")
+    g = open(output_dir + "ttmars_chrx_res.txt", "w")
     for sv in sv_list:
         #skip if not analyzed
-        if (not sv.analyzed_hap1) or (not sv.analyzed_hap2):
+        if (not sv.analyzed_hap1) and (not sv.analyzed_hap2):
             continue
         
         res = sv.get_vali_res()
@@ -306,10 +298,9 @@ class struc_var:
         return round((query_len - ref_len) / self.length, 2)
         
     def get_vali_res(self):
-        if (not self.analyzed_hap1) or (not self.analyzed_hap2):
+        if (not self.analyzed_hap1) and (not self.analyzed_hap2):
             return -1
-        
-        if self.analyzed_hap1 and self.analyzed_hap2:
+        elif self.analyzed_hap1 and self.analyzed_hap2:
             rela_len_1 = self.cal_rela_len(self.len_query_hap1, self.len_ref_hap1)
             rela_len_2 = self.cal_rela_len(self.len_query_hap2, self.len_ref_hap2)
             
@@ -333,6 +324,22 @@ class struc_var:
                     return (res_hap1, rela_len_1, rela_score_1)
                 else:
                     return (res_hap2, rela_len_2, rela_score_2)
+        elif self.analyzed_hap1:
+            rela_len_1 = self.cal_rela_len(self.len_query_hap1, self.len_ref_hap1)
+            
+            rela_score_1 = self.cal_rela_score(self.score_before_hap1, self.score_after_hap1)
+            
+            res_hap1 = self.check_tp(rela_len_1, rela_score_1)
+            
+            return (res_hap1, rela_len_1, rela_score_1)
+        elif self.analyzed_hap2:
+            rela_len_2 = self.cal_rela_len(self.len_query_hap2, self.len_ref_hap2)
+            
+            rela_score_2 = self.cal_rela_score(self.score_before_hap2, self.score_after_hap2)
+            
+            res_hap2 = self.check_tp(rela_len_2, rela_score_2)   
+            
+            return (res_hap2, rela_len_2, rela_score_2)
             
         
 class alignment:
@@ -379,7 +386,6 @@ def main():
     contig_name_list_1, contig_pos_list_1, contig_name_dict_1 = get_align_info.build_map_compress(chr_len, interval, liftover_file1, if_hg38)
     #build map and get validation info on hap2
     contig_name_list_2, contig_pos_list_2, contig_name_dict_2 = get_align_info.build_map_compress(chr_len, interval, liftover_file2, if_hg38)
-    
     
     #index SVs
     f = pysam.VariantFile(vcf_file,'r')
