@@ -4,27 +4,28 @@ TT-Mars: S**t**ructural Varian**t**s Assess**m**ent B**a**sed on Haplotype-**r**
 
 ## Usage
 
-1. Run dowaload_files.sh to download required files to ./ttmars_files.
-2. Create environment and activate: `conda create -n ttmars`
+1. Run dowaload_files.sh to download required files to `./ttmars_files`.
+2. Create environment and activate: `conda create -n ttmars` and `conda activate ttmars_test`.
+3. Install packages: `conda install -c bioconda pysam`, `conda install -c anaconda numpy`, `conda install -c bioconda mappy`, `conda install -c conda-forge biopython`, `conda install -c bioconda pybedtools`.
+4. Run TT-Mars: more instructions in `run_ttmars.sh`.
+`python ttmars.py output_dir if_hg38 centro_file files_dir/assem1_non_cov_regions.bed files_dir/assem2_non_cov_regions.bed vcf_file reference asm_h1 asm_h2 files_dir/lo_pos_assem1_result_compressed.bed files_dir/lo_pos_assem2_result_compressed.bed tr_file pass_only seq_resolved`
 
-python ttmars.py output_dir if_hg38 centromere_positions.bed assembly1.bam assembly2.bam avg_read_depth read.bam callset.vcf.gz assembly1.fasta assembly2.fasta assembly1_liftover.bed assembly2_liftover.bed
+`python reg_dup.py output_dir if_hg38 centro_file files_dir/assem1_non_cov_regions.bed files_dir/assem2_non_cov_regions.bed vcf_file reference asm_h1 asm_h2 files_dir/lo_pos_assem1_result_compressed.bed files_dir/lo_pos_assem2_result_compressed.bed tr_file files_dir/lo_pos_assem1_0_result_compressed.bed files_dir/lo_pos_assem2_0_result_compressed.bed pass_only`
 
+`python chrx.py output_dir if_hg38 centro_file files_dir/assem1_non_cov_regions.bed files_dir/assem2_non_cov_regions.bed vcf_file reference asm_h1 asm_h2 files_dir/lo_pos_assem1_result_compressed.bed files_dir/lo_pos_assem2_result_compressed.bed tr_file pass_only seq_resolved`
+
+`python combine.py output_dir num_X_chr`
 
 ## Positional parameters
 
-1. Output directory  
-2. if hg38: if reference is hg38 (True/False). If False, TT-Mars will use hs37d5 as reference  
-3. centromere file: centromere_positions.bed  
-4. Assembly alignment bam file: assembly1.bam (haplotype-resolved)  
-5. Assembly alignment bam file: assembly2.bam (haplotype-resolved)  
-6. Average read depth: the average read depth of the read file  
-7. Read file: read.bam (for high-depth-read calls only, need to modify the method to get high-depth regions)  
-8. A callset file: callset.vcf.gz  
-9. Referemce genome sequence file: reference_genome.fasta  
-10. Assembly sequence files: assembly1.fasta/.fa (haplotype-resolved)  
-11. Assembly sequence files: assembly2.fasta/.fa (haplotype-resolved)  
-12. liftover file: assembly1_liftover.bed (provided)  
-13. liftover file: assembly2_liftover.bed (provided)
+1. output_dir: Output directory.
+2. if hg38: if reference is hg38 (True/False). 
+3. centro_file: provided centromere file. 
+4. tr_file: provided tandem repeats file.
+5. vcf_file: callset file callset.vcf(.gz)  
+6. reference: referemce file reference_genome.fasta  
+7. asm_h1/2: assembly sequence files assembly1/2.fa 
+8. assem1_non_cov_regions.bed, assem2_non_cov_regions.bed, lo_pos_assem1_result_compressed.bed, lo_pos_assem2_result_compressed.bed, lo_pos_assem1_0_result_compressed.bed, lo_pos_assem2_0_result_compressed.bed: required files, downloaded to `./ttmars_files`
 
 ## Example Output
 
