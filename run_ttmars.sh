@@ -12,7 +12,7 @@
 sample=HG00096
 reference=path-to-reference_file/hg38.no_alts.fasta
 vcf_file=path-to-target-vcf/callset.vcf
-#assembly files
+#assembly files, can be downloaded by download_asm.sh
 asm_h1=path-to-assemblies/h1.fa
 asm_h2=path-to-assemblies/h2.fa
 output_dir=output-directory
@@ -33,7 +33,7 @@ seq_resolved=False
 #1: if male sample; 2: if female sample
 num_X_chr=1
 
-python ttmars.py "$output_dir" "$if_hg38" "$centro_file" "$files_dir"/assem1_non_cov_regions.bed "$files_dir"/assem2_non_cov_regions.bed "$vcf_file" "$reference" "$asm_h1" "$asm_h2" "$files_dir"/lo_pos_assem1_result_compressed.bed "$files_dir"/lo_pos_assem2_result_compressed.bed "$tr_file" "$pass_only" "$seq_resolved"
+# python ttmars.py "$output_dir" "$if_hg38" "$centro_file" "$files_dir"/assem1_non_cov_regions.bed "$files_dir"/assem2_non_cov_regions.bed "$vcf_file" "$reference" "$asm_h1" "$asm_h2" "$files_dir"/lo_pos_assem1_result_compressed.bed "$files_dir"/lo_pos_assem2_result_compressed.bed "$tr_file" "$pass_only" "$seq_resolved"
 
 python reg_dup.py "$output_dir" "$if_hg38" "$centro_file" "$files_dir"/assem1_non_cov_regions.bed "$files_dir"/assem2_non_cov_regions.bed "$vcf_file" "$reference" "$asm_h1" "$asm_h2" "$files_dir"/lo_pos_assem1_result_compressed.bed "$files_dir"/lo_pos_assem2_result_compressed.bed "$tr_file" "$files_dir"/lo_pos_assem1_0_result_compressed.bed "$files_dir"/lo_pos_assem2_0_result_compressed.bed "$pass_only"
 

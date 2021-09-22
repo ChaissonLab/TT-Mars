@@ -841,7 +841,7 @@ def get_ref_int_info(alm):
         ref_pos_list = ref_pos_list_2
     
     #test
-    print(alm.hap, alm.contig_int_start, alm.contig_int_end)
+#     print(alm.hap, alm.contig_int_start, alm.contig_int_end)
     
     start_ref_int_name, start, end = find_best_ref_int(alm, contig_idx_len, ref_name_list, ref_pos_list)
 
@@ -916,7 +916,7 @@ for agt_list in alignment_list:
         
         agt.set_ref_int_info(int_start, int_end)
         
-        agt.print_info()
+#         agt.print_info()
         
         if agt.cal_aligned_portion() < valid_aligned_portion:
             continue
@@ -940,7 +940,7 @@ for agt_list in alignment_list:
             sv_list[sv_list_idx].analyzed_hap2 = True
             
             if agt.cal_ins_rela_len() > ins_rela_len_lb and agt.cal_ins_rela_len() < ins_rela_len_ub:
-                print(sv_list_idx)
+#                 print(sv_list_idx)
                 fake_tp_sv(sv_list[sv_list_idx], hap)
             elif agt.cal_ins_rela_len() < non_ins_rela_len_ub:
                 sv_list[sv_list_idx].valid_non_ins = True   
