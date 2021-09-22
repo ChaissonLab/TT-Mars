@@ -15,8 +15,8 @@ output_dir = sys.argv[1] + "/"
 if_hg38_input = sys.argv[2]
 centromere_file = sys.argv[3]
 #assembly bam files
-bam_file1 = sys.argv[4]
-bam_file2 = sys.argv[5]
+assem1_non_cov_regions_file = sys.argv[4]
+assem2_non_cov_regions_file = sys.argv[5]
 #avg_read_depth = sys.argv[6]
 #read_bam_file = sys.argv[6]
 vcf_file = sys.argv[6]
@@ -97,8 +97,8 @@ tandem_start_list, tandem_end_list = get_align_info.get_chr_tandem_shart_end_lis
 #build lists for excluded SV positions
 
 #Output regions on ref where its not covered by at least one of the assembly
-get_conf_int.get_non_cover_regions(output_dir, bam_file1, 1, chr_list)
-get_conf_int.get_non_cover_regions(output_dir, bam_file2, 2, chr_list)
+# get_conf_int.get_non_cover_regions(output_dir, bam_file1, 1, chr_list)
+# get_conf_int.get_non_cover_regions(output_dir, bam_file2, 2, chr_list)
 
 #Get regions where read depth > 2 * avg_read_depth
 #get_conf_int.get_high_depth_calls_info(output_dir, read_bam_file, vcf_file, avg_read_depth)
@@ -108,8 +108,8 @@ get_conf_int.get_sv_positions(output_dir, vcf_file)
 
 #Output filtered calls in non-covered regions
 SV_positions_file = output_dir + "SV_positions.bed"
-assem1_non_cov_regions_file = output_dir + "assem1_non_cov_regions.bed"
-assem2_non_cov_regions_file = output_dir + "assem2_non_cov_regions.bed"
+# assem1_non_cov_regions_file = output_dir + "assem1_non_cov_regions.bed"
+# assem2_non_cov_regions_file = output_dir + "assem2_non_cov_regions.bed"
 get_conf_int.output_non_cov_call_info(output_dir, SV_positions_file, assem1_non_cov_regions_file, assem2_non_cov_regions_file)
 
 #get filtered sv info, using results from get_conf_int.py 

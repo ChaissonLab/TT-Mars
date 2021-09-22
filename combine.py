@@ -2,9 +2,9 @@ import csv
 import sys
 
 output_dir = sys.argv[1] + "/"
-male = sys.argv[2]
+no_X_chr = sys.argv[2]
 
-if male == "True":
+if int(no_X_chr) == 1:
     if_male = True
 else:
     if_male = False
@@ -74,15 +74,15 @@ for key in sv_dict:
 g.close()
 
 #remove files
-# import os
-# for name in ['assem1_non_cov_regions.bed', 'assem2_non_cov_regions.bed',
-#              'exclude_assem1_non_cover.bed', 'exclude_assem2_non_cover.bed',
-#              'SV_positions.bed', 'ttmars_chrx_res.txt', 'ttmars_regdup_res.txt',
-#              'ttmars_res.txt', 'align_info_assem1_chrall.txt', 'align_info_assem2_chrall.txt']:
-#     if os.path.exists(output_dir + name):
-#         os.remove(output_dir + name)
-    
-    
+import os
+for name in ['assem1_non_cov_regions.bed', 'assem2_non_cov_regions.bed',
+             'exclude_assem1_non_cover.bed', 'exclude_assem2_non_cover.bed',
+             'SV_positions.bed', 'ttmars_chrx_res.txt', 'ttmars_regdup_res.txt',
+             'ttmars_res.txt', 'align_info_assem1_chrall.txt', 'align_info_assem2_chrall.txt',
+             'all_reg_dup.fasta', 'all_reg_dup.fasta.fai']:
+    if os.path.exists(output_dir + name):
+        os.remove(output_dir + name)
+
 
 
 
