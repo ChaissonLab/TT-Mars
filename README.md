@@ -50,7 +50,7 @@ chr1	893792	893827	DEL	1.03	3.18	True
 
 
 ### Genome coverage files  
-| Samples      | Reference Liftover Hap1 | Reference Liftover Hap2 |
+| Samples      | Hap1 | Hap2 |
 | :----:      |    :----:   |        :----: |
 | HG00096 | https://figshare.com/ndownloader/files/30850246 | https://figshare.com/ndownloader/files/30850249 |
 | HG00171 | https://figshare.com/ndownloader/files/30850258 | https://figshare.com/ndownloader/files/30850261 |
