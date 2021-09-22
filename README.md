@@ -32,9 +32,9 @@ ttmars_res.txt:
 (chr start end type relative_length relative_score validation_result)  
 chr1	893792	893827	DEL	1.03	3.18	True
 
-## Available Data
+## Accompanying Resources
 
-### Liftover files and assemblies  
+### Liftover files  
 | Samples      | Reference Liftover Hap1 | Reference Liftover Hap2 | Assembly Liftover Hap1 | Assembly Liftover Hap2 |
 | :----:      |    :----:   |        :----: |    :----:   |        :----: |
 | HG00096 | https://figshare.com/ndownloader/files/30817390 | https://figshare.com/ndownloader/files/30817384 | https://figshare.com/ndownloader/files/30817387  |  https://figshare.com/ndownloader/files/30817381   |
@@ -47,3 +47,18 @@ chr1	893792	893827	DEL	1.03	3.18	True
 | HG01505 | https://figshare.com/ndownloader/files/30817471  | https://figshare.com/ndownloader/files/30817465 | https://figshare.com/ndownloader/files/30817468  |   https://figshare.com/ndownloader/files/30817474   |
 | HG01596 |  https://figshare.com/ndownloader/files/30817486 | https://figshare.com/ndownloader/files/30817480 | https://figshare.com/ndownloader/files/30817483  |   https://figshare.com/ndownloader/files/30817477   |
 | HG03009 | https://figshare.com/ndownloader/files/30817498 | https://figshare.com/ndownloader/files/30817492 |  https://figshare.com/ndownloader/files/30817495 |   https://figshare.com/ndownloader/files/30817489   |
+
+
+### Genome coverage files  
+| Samples      | Reference Liftover Hap1 | Reference Liftover Hap2 |
+| :----:      |    :----:   |        :----: |
+| HG00096 | https://figshare.com/ndownloader/files/30850246 | https://figshare.com/ndownloader/files/30850249 |
+| HG00171 | https://figshare.com/ndownloader/files/30850258 | https://figshare.com/ndownloader/files/30850261 |
+| HG00513 | https://figshare.com/ndownloader/files/30850639 | https://figshare.com/ndownloader/files/30850642 | 
+| HG00731 |  https://figshare.com/ndownloader/files/30850663 | https://figshare.com/ndownloader/files/30850660 | 
+| HG00732 | https://figshare.com/ndownloader/files/30850687 | https://figshare.com/ndownloader/files/30850681 |
+| HG00864 | https://figshare.com/ndownloader/files/30850708 | https://figshare.com/ndownloader/files/30850711 | 
+| HG01114 | https://figshare.com/ndownloader/files/30850726 | https://figshare.com/ndownloader/files/30850729 | 
+| HG01505 | https://figshare.com/ndownloader/files/30850747  | https://figshare.com/ndownloader/files/30850744 | 
+| HG01596 | https://figshare.com/ndownloader/files/30850768 | https://figshare.com/ndownloader/files/30850762 |
+| HG03009 | https://figshare.com/ndownloader/files/30850777 | https://figshare.com/ndownloader/files/30850780 | 
