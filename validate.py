@@ -8,8 +8,7 @@ import math
 import pysam
 #print(pysam.__version__)
 
-import numpy as np 
-import matplotlib.pyplot as plt  
+import numpy as np  
 import sys
 
 

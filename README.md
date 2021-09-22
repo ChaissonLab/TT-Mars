@@ -2,9 +2,13 @@
 
 TT-Mars: S**t**ructural Varian**t**s Assess**m**ent B**a**sed on Haplotype-**r**esolved A**s**semblies.
 
-## Requirement
+## Usage
 
-Python 3 packages: pysam (https://github.com/pysam-developers/pysam). 
+1. Run dowaload_files.sh to download required files to ./ttmars_files.
+2. Create environment and activate: `conda create -n ttmars`
+
+python ttmars.py output_dir if_hg38 centromere_positions.bed assembly1.bam assembly2.bam avg_read_depth read.bam callset.vcf.gz assembly1.fasta assembly2.fasta assembly1_liftover.bed assembly2_liftover.bed
+
 
 ## Positional parameters
 
@@ -21,10 +25,6 @@ Python 3 packages: pysam (https://github.com/pysam-developers/pysam).
 11. Assembly sequence files: assembly2.fasta/.fa (haplotype-resolved)  
 12. liftover file: assembly1_liftover.bed (provided)  
 13. liftover file: assembly2_liftover.bed (provided)
-
-## Usage
-
-python ttmars.py output_dir if_hg38 centromere_positions.bed assembly1.bam assembly2.bam avg_read_depth read.bam callset.vcf.gz assembly1.fasta assembly2.fasta assembly1_liftover.bed assembly2_liftover.bed
 
 ## Example Output
 
