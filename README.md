@@ -26,12 +26,12 @@ TT-Mars: S**t**ructural Varian**t**s Assess**m**ent B**a**sed on Haplotype-**r**
 3. `centro_file`: provided centromere file. 
 4. `tr_file`: provided tandem repeats file.
 5. `vcf_file`: callset file callset.vcf(.gz)  
-6. `reference`: referemce file reference_genome.fasta  
-7. `asm_h1/2`: assembly files assembly1/2.fa, can be downloaded by `download_asm.sh`
-8. `assem1_non_cov_regions.bed`, `assem2_non_cov_regions.bed`, `lo_pos_assem1_result_compressed.bed`, `lo_pos_assem2_result_compressed.bed`, `lo_pos_assem1_0_result_compressed.bed`, `lo_pos_assem2_0_result_compressed.bed`: required files, downloaded to `./ttmars_files`
-9. `pass_only`: if only assess PASS calls
-10. `seq_resolved`: if assess INS by sequences
-11. `num_X_chr`: if male sample: 1; if female sample: 2
+6. `reference`: referemce file reference_genome.fasta.
+7. `asm_h1/2`: assembly files assembly1/2.fa, can be downloaded by `download_asm.sh`.
+8. `assem1_non_cov_regions.bed`, `assem2_non_cov_regions.bed`, `lo_pos_assem1_result_compressed.bed`, `lo_pos_assem2_result_compressed.bed`, `lo_pos_assem1_0_result_compressed.bed`, `lo_pos_assem2_0_result_compressed.bed`: required files, downloaded to `./ttmars_files`.
+9. `pass_only`: if only assess PASS calls (True/False). 
+10. `seq_resolved`: if assess INS by sequences (True/False). 
+11. `num_X_chr`: if male sample: 1; if female sample: 2.
 
 ## Example Output
 
