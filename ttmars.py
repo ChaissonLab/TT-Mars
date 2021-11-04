@@ -10,7 +10,7 @@ import get_align_info
 
 ##########################################################
 ##########################################################
-##input
+#input
 output_dir = sys.argv[1] + "/"
 if_hg38_input = sys.argv[2]
 centromere_file = sys.argv[3]
@@ -457,4 +457,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
