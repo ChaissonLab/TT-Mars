@@ -18,10 +18,6 @@ import sys
 output_dir = sys.argv[1]
 vcf_file = sys.argv[2]
 
-#vcf_file = "../../../callset_files/naive_caller/0810_v1_result/lra_ccs_0810_v1_sorted.vcf.gz"
-#test
-#vcf_file = "../../callset_files/naive_caller/test_example.vcf"
-#output_dir = "../../output/v4.0/naive_caller_0810_v1/"
 
 # %%
 #process liftover results
@@ -64,8 +60,6 @@ for record in contig_positions_assem2_result:
 
 '''
 
-# %%
-# %%
 #bedtools filter out SVs that are too close to each other
 
 #create bedfiles
@@ -88,8 +82,3 @@ for counter, rec in enumerate(f.fetch()):
 	g.write("\n")
 g.close()
 
-
-
-#using bedtools to filter SV
-#bedtools intersect -a ../giab_data_output/SV_positions.bed -b ../../run_manta_data/manta_output/contig_positions_assem1_result_new.bed -u > ../giab_data_output/exclude__assem1_result.bed
-#bedtools intersect -a ../giab_data_output/SV_positions.bed -b ../../run_manta_data/manta_output/contig_positions_assem2_result_new.bed -u > ../giab_data_output/exclude__assem2_result.bed

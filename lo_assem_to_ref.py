@@ -27,7 +27,7 @@ def isKthBitSet(n, k):
 #generate bed file liftover
 
 #TODO: change output 
-g = open(output_dir + "lo_pos_assem1_withSed.bed", "w")
+g = open(output_dir + "lo_pos_assem1.bed", "w")
 
 samfile = pysam.AlignmentFile(assembly_bam_file_hap1, "rb")
 for record in samfile:
@@ -52,11 +52,10 @@ for record in samfile:
             g.write(str(i+1) + "\t")
             g.write(query_name + "\t")
             g.write("\n")
-
 g.close()
 
 #for assem2
-g = open(output_dir + "lo_pos_assem2_withSed.bed", "w")
+g = open(output_dir + "lo_pos_assem2.bed", "w")
 
 samfile = pysam.AlignmentFile(assembly_bam_file_hap2, "rb")
 for record in samfile:

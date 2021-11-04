@@ -7,12 +7,9 @@ import csv
 #input: input bam file (sorted bam), output directory, if_hg38
 #output: output directory/output bam file (unsorted)
 
-#file_name = "/panfs/qcb-panasas/jianzhiy/data/assemblies/hgsvc2/HG00096/mm2_hg38_asm5_woSed_assem1_sort.bam"
 file_name = sys.argv[1]
 infile = pysam.AlignmentFile(file_name, "rb")
 #file not sorted
-
-#outfile = pysam.AlignmentFile("HG00096/mm2_hg38_asm5_woSed_assem2_nool.bam", "wb", template=infile)
 
 #outfile_name = "mm2_hg38_asm5_woSed_assem2_nool.bam"
 #outfile_name = sys.argv[2]
@@ -68,6 +65,7 @@ def mergesort_contigs(unsorted_list):
             
             
 def find_query_pos(contig, ref_pos):
+    #note -1?
     cur_contig_pos = contig.query_alignment_start
     cur_ref_pos = contig.reference_start
     cigar_tuples = contig.cigartuples
@@ -81,19 +79,24 @@ def find_query_pos(contig, ref_pos):
         return -1
     #loop through cigar tuples
     for tup in cigar_tuples:
+        
         #if softclip
-        if tup[0] == 4:
-            #or skip this tuple: we had cur_contig_pos = contig.query_alignment_start
-            cur_contig_pos = tup[1]
-            continue
+#         if tup[0] == 4:
+#             #or skip this tuple: we had cur_contig_pos = contig.query_alignment_start
+#             cur_contig_pos = tup[1] - 1
+#             continue
+
         #if tup consumes both contig and ref, and reached the target ref_pos
-        if tup[0] in [0, 7, 8] and cur_ref_pos <= ref_pos and cur_ref_pos + tup[1] > ref_pos:
+        if tup[0] in [0, 7, 8] and cur_ref_pos < ref_pos and cur_ref_pos + tup[1] >= ref_pos:
             return cur_contig_pos + (ref_pos - cur_ref_pos)
         #elif tup consemes ref only, and reached the target ref_pos
-        elif tup[0] in [2, 3] and cur_ref_pos <= ref_pos and cur_ref_pos + tup[1] > ref_pos:
+        elif tup[0] in [2, 3] and cur_ref_pos < ref_pos and cur_ref_pos + tup[1] >= ref_pos:
             return cur_contig_pos
         #if consume contig, have not reached the target ref_pos
-        if tup[0] in [0, 1, 4, 7, 8]:
+#         if tup[0] in [0, 1, 4, 7, 8]:
+        #no SC is considered
+        if tup[0] in [0, 1, 7, 8]:
+            #the start pos of the next cigar tup
             cur_contig_pos += tup[1]
         #if consume ref, have not reached the target ref_pos
         if tup[0] in [0, 2, 3, 7, 8]:
@@ -105,13 +108,37 @@ def find_query_pos(contig, ref_pos):
             
 #TODO: check +1/-1 position
 def modify_cigar(contig, start_pos, end_pos, left):
+    
     #left = True if trimming from left
     #modi_contig = copy.deepcopy(contig)
     #if read is covered by another read
     cigar_tuples = contig.cigartuples
+    
+    if_hc_first = False
+    if_hc_last = False
+    hc_first_tuple = []
+    hc_last_tuple = []
+    
+    if cigar_tuples[0][0] == 5:
+        if_hc_first = True
+        hc_first_tuple.append(cigar_tuples[0])
+        cigar_tuples = cigar_tuples[1:]
+    if cigar_tuples[-1][0] == 5:
+        if_hc_last = True
+        hc_last_tuple.append(cigar_tuples[-1])
+        cigar_tuples = cigar_tuples[0:len(cigar_tuples)-1]
+    
+    #test
+#     print(cigar_tuples)
+    
     new_cigars = []
     if end_pos == -1:
-        contig.cigar = [(4, contig.infer_query_length())]
+        if if_hc_first:
+            new_cigars.append(hc_first_tuple[0])
+        new_cigars.append((4, contig.infer_query_length()))
+        if if_hc_last:
+            new_cigars.append(hc_last_tuple[0])
+        contig.cigar = new_cigars
     #start_pos, end_pos: trimming start and end on the ref
     #trim from left
     elif left:
@@ -120,29 +147,41 @@ def modify_cigar(contig, start_pos, end_pos, left):
         #trim start and pos on contig, 0 base
         trim_start_pos = 0
         trim_end_pos = find_query_pos(contig, end_pos)
+        
+        if trim_end_pos == contig.infer_query_length():
+            trim_end_pos -= 1
+        
         trim_base = trim_end_pos - trim_start_pos + 1
+        
         #test
         #print("here1", trim_base, trim_end_pos)
         #passed_base
         passed_base = 0
+        if if_hc_first:
+            new_cigars.append(hc_first_tuple[0])
         new_cigars.append((4, trim_base))
+        #the first index of cigar tuple that will be kept
         trim_index = 0
         for tup_index, tup in enumerate(cigar_tuples):
             #if consume contig, have reached the target ref_pos
-            if tup[0] in [0, 1, 4, 7, 8] and passed_base <= trim_base and passed_base + tup[1] > trim_base:
-                if trim_base - passed_base > 0:
+            if tup[0] in [0, 1, 4, 7, 8] and passed_base < trim_base and passed_base + tup[1] >= trim_base:
+                if passed_base + tup[1] > trim_base:
                     #test
                     #print("here2", (tup[0], tup[1] - (trim_base - passed_base)))
-                    new_cigars.append((tup[0], tup[1] - (trim_base - passed_base)))
+                    new_cigars.append((tup[0], passed_base + tup[1] - trim_base))
                     #new_cigars.append((tup[0], trim_base - passed_base))
                     trim_index = tup_index + 1
                 else:
-                    trim_index = tup_index
+                    trim_index = tup_index + 1
                 break
             #if consume contig
             if tup[0] in [0, 1, 4, 7, 8]:
                 passed_base += tup[1]
-        new_cigars.extend(cigar_tuples[trim_index:])
+        
+        if trim_index <= len(cigar_tuples) - 1:
+            new_cigars.extend(cigar_tuples[trim_index:])
+        if if_hc_last:
+            new_cigars.append(hc_last_tuple[0])        
         contig.cigar = new_cigars
         #test
         #print("here3", new_cigars)
@@ -153,33 +192,45 @@ def modify_cigar(contig, start_pos, end_pos, left):
         #print("here0", start_pos, end_pos)
         trim_start_pos = find_query_pos(contig, start_pos)
         trim_end_pos = contig.infer_query_length() - 1
+        
+        if trim_start_pos == contig.infer_query_length():
+            trim_start_pos -= 1
+        
         trim_base = trim_end_pos - trim_start_pos + 1
         #test
         #print("here1", trim_base, trim_end_pos, trim_start_pos)
         #passed_base
         passed_base = 0
+        if if_hc_last:
+            new_cigars.append(hc_last_tuple[0])          
         new_cigars = [(4, trim_base)] + new_cigars
         trim_index = 0
         for i in range(len(cigar_tuples)-1, -1, -1):
             tup = cigar_tuples[i]
             #if consume contig, have reached the target ref_pos
-            if tup[0] in [0, 1, 4, 7, 8] and passed_base <= trim_base and passed_base + tup[1] > trim_base:
-                if trim_base - passed_base > 0:
+            if tup[0] in [0, 1, 4, 7, 8] and passed_base < trim_base and passed_base + tup[1] >= trim_base:
+                if passed_base + tup[1] > trim_base:
                     #test
                     #print("here2", (tup[0], tup[1] - (trim_base - passed_base)))
                     new_cigars = [(tup[0], tup[1] - (trim_base - passed_base))] + new_cigars
                     trim_index = i - 1
                 else:
-                    trim_index = i
+                    trim_index = i - 1 
                 break
             #if consume contig
             if tup[0] in [0, 1, 4, 7, 8]:
                 passed_base += tup[1]
-        new_cigars = cigar_tuples[:trim_index+1] + new_cigars
+        
+        if trim_index != -1:
+            new_cigars = cigar_tuples[:trim_index+1] + new_cigars
+        if if_hc_first:
+            new_cigars = hc_first_tuple + new_cigars      
         contig.cigar = new_cigars
+        
         #test
         #print("here3", new_cigars)
-    #return modi_contig            
+    #return modi_contig     
+    
             
             
 def trim_by_ol(contig, index, contig_list, remove_list):
@@ -189,6 +240,7 @@ def trim_by_ol(contig, index, contig_list, remove_list):
         contig_end = contig.reference_end - 1
         cur_start = contig_list[i].reference_start
         cur_end = contig_list[i].reference_end - 1
+            
         #if the short contig is covered by current long contig
         if contig_start >= cur_start and contig_end <= cur_end:
             modify_cigar(contig, 0, -1, False)
@@ -196,11 +248,16 @@ def trim_by_ol(contig, index, contig_list, remove_list):
             break
         #if overlapping
         elif contig_start <= cur_end and contig_end > cur_end:
+                
             modify_cigar(contig, contig_start, cur_end, True)
+            
+            
         elif contig_start < cur_start and contig_end >= cur_start:
+            
             modify_cigar(contig, cur_start, contig_end, False)
     #may not needed
-    contig_list[index] = contig    
+    contig_list[index] = contig     
+
 
 if if_hg38:
     chr_list = ["chr1", "chr2", "chr3", "chr4", "chr5",

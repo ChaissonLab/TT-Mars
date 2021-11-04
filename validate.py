@@ -8,8 +8,7 @@ import math
 import pysam
 #print(pysam.__version__)
 
-import numpy as np 
-import matplotlib.pyplot as plt  
+import numpy as np  
 import sys
 
 
@@ -36,7 +35,7 @@ def build_centro_dict(centromere_file):
     return dict_centromere
 
 #build lists for excluded SV positions
-def get_filtered_sv_pos(exclude_assem1_non_cover_file, exclude_assem2_non_cover_file, exclude_high_depth_file):
+def get_filtered_sv_pos(exclude_assem1_non_cover_file, exclude_assem2_non_cover_file):
 
     with open(exclude_assem1_non_cover_file) as f:
         reader = csv.reader(f, delimiter="\t")
@@ -60,23 +59,35 @@ def get_filtered_sv_pos(exclude_assem1_non_cover_file, exclude_assem2_non_cover_
     f.close()
     '''
 
-    with open(exclude_high_depth_file) as f:
-    #with open("/panfs/qcb-panasas/jianzhiy/illuVeri/use_mcutils/output/v4.6.1/lumpy/HG002/exclude_high_depth.bed") as f:
-        reader = csv.reader(f, delimiter="\t")
-        exclude_high_depth = list(reader)
-    f.close()
+#     with open(exclude_high_depth_file) as f:
+#     #with open("/panfs/qcb-panasas/jianzhiy/illuVeri/use_mcutils/output/v4.6.1/lumpy/HG002/exclude_high_depth.bed") as f:
+#         reader = csv.reader(f, delimiter="\t")
+#         exclude_high_depth = list(reader)
+#     f.close()
     
-    return exclude_assem1_non_cover, exclude_assem2_non_cover, exclude_high_depth
+    return exclude_assem1_non_cover, exclude_assem2_non_cover
 
 #check if current cases is in the excluded list
-def check_exclude(list_to_check, exclude_assem1_non_cover, exclude_assem2_non_cover, exclude_high_depth):
+def check_exclude(list_to_check, exclude_assem1_non_cover, exclude_assem2_non_cover):
 	if (list_to_check in exclude_assem1_non_cover) or (list_to_check in exclude_assem2_non_cover):
 		return True
     #With overlapping contigs trimmed, 
 	#elif (list_to_check in exclude_assem1_short_reads) or (list_to_check in exclude_assem2_short_reads):
 	#	return True
-	elif list_to_check in exclude_high_depth:
+# 	elif list_to_check in exclude_high_depth:
+# 		return True
+	else:
+		return False
+    
+#check if current cases is in the excluded list for male chr X
+def check_exclude_chrx(list_to_check, exclude_assem1_non_cover, exclude_assem2_non_cover):
+	if (list_to_check in exclude_assem1_non_cover) and (list_to_check in exclude_assem2_non_cover):
 		return True
+    #With overlapping contigs trimmed, 
+	#elif (list_to_check in exclude_assem1_short_reads) or (list_to_check in exclude_assem2_short_reads):
+	#	return True
+# 	elif list_to_check in exclude_high_depth:
+# 		return True
 	else:
 		return False
 
@@ -119,10 +130,11 @@ def check_tp(rela_len, rela_score, sv_type):
     return result
 
 # build dictionary for validation
-def updateDict(dict_score, align_info, exclude_assem1_non_cover, exclude_assem2_non_cover, exclude_high_depth, dict_centromere, chr_list, if_hg38):
+def updateDict(dict_score, align_info, exclude_assem1_non_cover, exclude_assem2_non_cover, dict_centromere, chr_list, if_hg38):
     for record in align_info:
         #len > 30
         if int(record[3]) > 0 and abs(int(record[8])) > 30 and str(record[9]) in chr_list:
+#         if int(record[3]) > 0 and abs(int(record[8])) >= 10 and abs(int(record[8])) <= 30 and str(record[9]) in chr_list:
             #filter out centromere cases
             index = str(record[0])
             ref_name = str(record[9])
@@ -142,7 +154,7 @@ def updateDict(dict_score, align_info, exclude_assem1_non_cover, exclude_assem2_
             sv_end = int(record[11])
             list_to_check = [str(ref_name), str(sv_pos), str(sv_end)]
             #if sv in high-depth regions or non-covered regions, skip
-            if check_exclude(list_to_check, exclude_assem1_non_cover, exclude_assem2_non_cover, exclude_high_depth):
+            if check_exclude(list_to_check, exclude_assem1_non_cover, exclude_assem2_non_cover):
                 continue
 
             #if ref start or ref end in centromere, skip
@@ -175,7 +187,7 @@ def updateDict(dict_score, align_info, exclude_assem1_non_cover, exclude_assem2_
                 '''
                 #if INS or DEL choose the tp one
                 #if both tp/fp, choose the better relative length one
-                if record[4] == 'INS' or record[4] == 'DEL':
+                if record[4] in ['INS', 'DEL', 'DUP', 'DUP:TANDEM']:
                     old_rela_score = (float(dict_score[record[0]][1]) - float(dict_score[record[0]][0]))/abs(float(dict_score[record[0]][0]))
                     new_rela_score = (float(record[2]) - float(record[1]))/abs(float(record[1]))
                     old_rela_len = (float(dict_score[record[0]][5]) - float(dict_score[record[0]][6]))/(float(dict_score[record[0]][7]))
@@ -204,7 +216,7 @@ def updateDict(dict_score, align_info, exclude_assem1_non_cover, exclude_assem2_
     return dict_score
 
 #validate by both haplotypes
-def vali_info(output_dir, exclude_assem1_non_cover, exclude_assem2_non_cover, exclude_high_depth, assem1_info_file, assem2_info_file, dict_centromere, chr_list, if_hg38):
+def vali_info(output_dir, exclude_assem1_non_cover, exclude_assem2_non_cover, assem1_info_file, assem2_info_file, dict_centromere, chr_list, if_hg38):
     with open(output_dir + assem1_info_file) as f:
         reader = csv.reader(f, delimiter="\t")
         align_info_assem1 = list(reader)
@@ -216,8 +228,8 @@ def vali_info(output_dir, exclude_assem1_non_cover, exclude_assem2_non_cover, ex
     f.close()
 
     dict_comb = dict()
-    dict_comb = updateDict(dict_comb, align_info_assem1, exclude_assem1_non_cover, exclude_assem2_non_cover, exclude_high_depth, dict_centromere, chr_list, if_hg38)
-    dict_comb = updateDict(dict_comb, align_info_assem2, exclude_assem1_non_cover, exclude_assem2_non_cover, exclude_high_depth, dict_centromere, chr_list, if_hg38)
+    dict_comb = updateDict(dict_comb, align_info_assem1, exclude_assem1_non_cover, exclude_assem2_non_cover, dict_centromere, chr_list, if_hg38)
+    dict_comb = updateDict(dict_comb, align_info_assem2, exclude_assem1_non_cover, exclude_assem2_non_cover, dict_centromere, chr_list, if_hg38)
 
     return dict_comb
 
@@ -282,15 +294,13 @@ def main():
     dict_centromere = build_centro_dict(centromere_file)
     
     #build lists for excluded SV positions
-    exclude_assem1_non_cover, exclude_assem2_non_cover, exclude_high_depth = get_filtered_sv_pos(output_dir + "exclude_assem1_non_cover.bed", 
-                                                                                                 output_dir + "exclude_assem2_non_cover.bed", 
-                                                                                                 output_dir + "exclude_high_depth.bed")
+    exclude_assem1_non_cover, exclude_assem2_non_cover = get_filtered_sv_pos(output_dir + "exclude_assem1_non_cover.bed", 
+                                                                             output_dir + "exclude_assem2_non_cover.bed")
     
     #validate by both haplotypes
     dict_comb = vali_info(output_dir, 
                           exclude_assem1_non_cover, 
                           exclude_assem2_non_cover, 
-                          exclude_high_depth, 
                           "align_info_assem1_chrall.txt",
                           "align_info_assem2_chrall.txt", 
                           dict_centromere, 
