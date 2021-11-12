@@ -122,12 +122,12 @@ def main():
     bam_file1 = sys.argv[2]
     bam_file2 = sys.argv[3]
     if_hg38_str = sys.argv[4]
-    #if_hg38 = True
-    avg_read_depth = sys.argv[5]
-    #reads bam file
-    read_bam_file = sys.argv[6]
-    #callset file
-    vcf_file = sys.argv[7]
+#     #if_hg38 = True
+#     avg_read_depth = sys.argv[5]
+#     #reads bam file
+#     read_bam_file = sys.argv[6]
+#     #callset file
+#     vcf_file = sys.argv[7]
     
     #constants
     if if_hg38_str == "True":
@@ -141,26 +141,26 @@ def main():
                     "chr6", "chr7", "chr8", "chr9", "chr10",
                     "chr11", "chr12", "chr13", "chr14", "chr15",
                     "chr16", "chr17", "chr18", "chr19", "chr20",
-                    "chr21", "chr22", "chrX", "chrY"]
+                    "chr21", "chr22", "chrX"]
     else:
         chr_list = ["1", "2", "3", "4", "5",
                     "6", "7", "8", "9", "10",
                     "11", "12", "13", "14", "15",
                     "16", "17", "18", "19", "20",
-                    "21", "22", "X", "Y"]
+                    "21", "22", "X"]
     
     #Output regions on ref where its not covered by at least one of the assembly
     get_non_cover_regions(output_dir, bam_file1, 1, chr_list)
     get_non_cover_regions(output_dir, bam_file2, 2, chr_list)
     
     #Output sv positions
-    get_sv_positions(output_dir, vcf_file)
+#     get_sv_positions(output_dir, vcf_file)
     
     #Output filtered calls in non-covered regions
-    SV_positions_file = output_dir + "SV_positions.bed"
-    assem1_non_cov_regions_file = output_dir + "assem1_non_cov_regions.bed"
-    assem2_non_cov_regions_file = output_dir + "assem2_non_cov_regions.bed"
-    output_non_cov_call_info(output_dir, SV_positions_file, assem1_non_cov_regions_file, assem2_non_cov_regions_file)
+#     SV_positions_file = output_dir + "SV_positions.bed"
+#     assem1_non_cov_regions_file = output_dir + "assem1_non_cov_regions.bed"
+#     assem2_non_cov_regions_file = output_dir + "assem2_non_cov_regions.bed"
+#     output_non_cov_call_info(output_dir, SV_positions_file, assem1_non_cov_regions_file, assem2_non_cov_regions_file)
     
     #Get regions where read depth > 2 * avg_read_depth
 #     get_high_depth_calls_info(output_dir, read_bam_file, vcf_file, avg_read_depth)

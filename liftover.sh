@@ -50,7 +50,14 @@ samLiftover $output_dir/assem2_nool_sort.sam $output_dir/lo_pos_assem2_0.bed $ou
 #######################################################
 #######################################################
 #4. Compress liftover files
+
 python compress_liftover.py $output_dir lo_pos_assem1_result.bed lo_pos_assem1_result_compressed.bed
 python compress_liftover.py $output_dir lo_pos_assem2_result.bed lo_pos_assem2_result_compressed.bed
 python compress_liftover.py $output_dir lo_pos_assem1_0_result.bed lo_pos_assem1_0_result_compressed.bed
 python compress_liftover.py $output_dir lo_pos_assem2_0_result.bed lo_pos_assem2_0_result_compressed.bed
+
+#######################################################
+#######################################################
+#5. Get non-covered regions
+
+python get_conf_int.py $output_dir $output_dir/assem1_nool_sort.bam $output_dir/assem2_nool_sort.bam $if_hg38
