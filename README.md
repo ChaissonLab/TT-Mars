@@ -55,6 +55,7 @@ ttmars_combined_res.txt:
 | HG01505 | https://figshare.com/ndownloader/files/30817471  | https://figshare.com/ndownloader/files/30817465 | https://figshare.com/ndownloader/files/30817468  |   https://figshare.com/ndownloader/files/30817474   |
 | HG01596 |  https://figshare.com/ndownloader/files/30817486 | https://figshare.com/ndownloader/files/30817480 | https://figshare.com/ndownloader/files/30817483  |   https://figshare.com/ndownloader/files/30817477   |
 | HG03009 | https://figshare.com/ndownloader/files/30817498 | https://figshare.com/ndownloader/files/30817492 |  https://figshare.com/ndownloader/files/30817495 |   https://figshare.com/ndownloader/files/30817489   |
+| HG002 | https://figshare.com/ndownloader/files/31455682 | https://figshare.com/ndownloader/files/31455676 |  https://figshare.com/ndownloader/files/31455685 |   https://figshare.com/ndownloader/files/31455679   |
 
 
 ### Genome coverage files  
@@ -70,3 +71,4 @@ ttmars_combined_res.txt:
 | HG01505 | https://figshare.com/ndownloader/files/30850747  | https://figshare.com/ndownloader/files/30850744 | 
 | HG01596 | https://figshare.com/ndownloader/files/30850768 | https://figshare.com/ndownloader/files/30850762 |
 | HG03009 | https://figshare.com/ndownloader/files/30850777 | https://figshare.com/ndownloader/files/30850780 | 
+| HG002 | https://figshare.com/ndownloader/files/31455670 | https://figshare.com/ndownloader/files/31455673 | 
