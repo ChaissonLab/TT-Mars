@@ -61,6 +61,8 @@ liftover_file2_0 = sys.argv[14]
 
 if_passonly_input = sys.argv[15]
 
+wrong_len_input = sys.argv[15]
+
 #constants
 
 #liftover interval
@@ -72,6 +74,10 @@ if if_hg38_input == "True":
 if_pass_only = False
 if if_passonly_input == "True":
     if_pass_only = True
+#if include wrong length as TP
+wrong_len = False
+if wrong_len_input == "True":
+    wrong_len = True
 #chr names
 chr_list = []
 if if_hg38:

@@ -30,6 +30,7 @@ liftover_file2 = sys.argv[11]
 tandem_file = sys.argv[12]
 if_passonly_input = sys.argv[13]
 seq_resolved_input = sys.argv[14]
+wrong_len_input = sys.argv[15]
 
 # liftover_file1_0 = sys.argv[12]
 # liftover_file2_0 = sys.argv[13]
@@ -51,6 +52,10 @@ if if_passonly_input == "True":
 seq_resolved = False
 if seq_resolved_input == "True":
     seq_resolved = True
+#if include wrong length as TP
+wrong_len = False
+if wrong_len_input == "True":
+    wrong_len = True
 #chr names
 chr_list = []
 if if_hg38:
