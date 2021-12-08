@@ -11,11 +11,11 @@ TT-Mars: S**t**ructural Varian**t**s Assess**m**ent B**a**sed on Haplotype-**r**
 4. Install packages: `conda install -c bioconda pysam`, `conda install -c anaconda numpy`, `conda install -c bioconda mappy`, `conda install -c conda-forge biopython`, `conda install -c bioconda pybedtools`.
 5. Run TT-Mars with following steps: `run_ttmars.sh` includes more instructions. Users can run it to run TT-Mars after setting up.
 
-`python ttmars.py output_dir if_hg38 centro_file files_dir/assem1_non_cov_regions.bed files_dir/assem2_non_cov_regions.bed vcf_file reference asm_h1 asm_h2 files_dir/lo_pos_assem1_result_compressed.bed files_dir/lo_pos_assem2_result_compressed.bed tr_file pass_only seq_resolved`
+`python ttmars.py output_dir if_hg38 centro_file files_dir/assem1_non_cov_regions.bed files_dir/assem2_non_cov_regions.bed vcf_file reference asm_h1 asm_h2 files_dir/lo_pos_assem1_result_compressed.bed files_dir/lo_pos_assem2_result_compressed.bed tr_file pass_only seq_resolved wlen_tp`
 
-`python reg_dup.py output_dir if_hg38 centro_file files_dir/assem1_non_cov_regions.bed files_dir/assem2_non_cov_regions.bed vcf_file reference asm_h1 asm_h2 files_dir/lo_pos_assem1_result_compressed.bed files_dir/lo_pos_assem2_result_compressed.bed tr_file files_dir/lo_pos_assem1_0_result_compressed.bed files_dir/lo_pos_assem2_0_result_compressed.bed pass_only`
+`python reg_dup.py output_dir if_hg38 centro_file files_dir/assem1_non_cov_regions.bed files_dir/assem2_non_cov_regions.bed vcf_file reference asm_h1 asm_h2 files_dir/lo_pos_assem1_result_compressed.bed files_dir/lo_pos_assem2_result_compressed.bed tr_file files_dir/lo_pos_assem1_0_result_compressed.bed files_dir/lo_pos_assem2_0_result_compressed.bed pass_only wlen_tp`
 
-`python chrx.py output_dir if_hg38 centro_file files_dir/assem1_non_cov_regions.bed files_dir/assem2_non_cov_regions.bed vcf_file reference asm_h1 asm_h2 files_dir/lo_pos_assem1_result_compressed.bed files_dir/lo_pos_assem2_result_compressed.bed tr_file pass_only seq_resolved`
+`python chrx.py output_dir if_hg38 centro_file files_dir/assem1_non_cov_regions.bed files_dir/assem2_non_cov_regions.bed vcf_file reference asm_h1 asm_h2 files_dir/lo_pos_assem1_result_compressed.bed files_dir/lo_pos_assem2_result_compressed.bed tr_file pass_only seq_resolved wlen_tp`
 
 `python combine.py output_dir num_X_chr`
 
@@ -32,6 +32,7 @@ TT-Mars: S**t**ructural Varian**t**s Assess**m**ent B**a**sed on Haplotype-**r**
 9. `pass_only`: if only assess PASS calls (True/False). 
 10. `seq_resolved`: if assess INS by sequences (True/False). 
 11. `num_X_chr`: if male sample: 1; if female sample: 2.
+12. `wlen_tp`: if TT-Mars validates wrong-length calls as TP (True/False).
 
 ## Example Output
 

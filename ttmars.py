@@ -30,6 +30,7 @@ liftover_file2 = sys.argv[11]
 tandem_file = sys.argv[12]
 if_passonly_input = sys.argv[13]
 seq_resolved_input = sys.argv[14]
+wrong_len_input = sys.argv[15]
 
 # liftover_file1_0 = sys.argv[12]
 # liftover_file2_0 = sys.argv[13]
@@ -51,6 +52,10 @@ if if_passonly_input == "True":
 seq_resolved = False
 if seq_resolved_input == "True":
     seq_resolved = True
+#if include wrong length as TP
+wrong_len = False
+if wrong_len_input == "True":
+    wrong_len = True
 #chr names
 chr_list = []
 if if_hg38:
@@ -284,6 +289,48 @@ class struc_var:
             if rela_score <= 0:
                 result = False
         return result
+    
+    #TP when wrong length flag presents -- looser rules for TP
+    def check_tp_wlen(self, rela_len, rela_score):
+        result = True
+        if self.sv_type in ['DEL', 'DUP', 'DUP:TANDEM']:
+            if rela_score >= 0 and rela_score <= 2.5:
+                if rela_len >= -0.05*rela_score + 0.6 and rela_len <= 0.05*rela_score + 1.4:
+                    result = True
+                else:
+                    result = False
+            elif rela_score > 2.5:
+                if rela_len >= 0.475 and rela_len <= 1.525:
+                    result = True
+                else:
+                    result = False
+            else:
+                result = False
+        elif self.sv_type == 'INS':
+            #not seq-resolved
+            #if len(self.ins_seq) == 0:
+            if not self.if_seq_resolved:
+                if rela_len < 0.475 or rela_len > 1.525:
+                    result = False
+            #seq-resolved
+            else:
+                if rela_score >= 0 and rela_score <= 2.5:
+                    if rela_len >= -0.05*rela_score + 0.6 and rela_len <= 0.05*rela_score + 1.4:
+                        result = True
+                    else:
+                        result = False
+                elif rela_score > 2.5:
+                    if rela_len >= 0.475 and rela_len <= 1.525:
+                        result = True
+                    else:
+                        result = False
+                else:
+                    result = False                
+                
+        elif self.sv_type == 'INV':
+            if rela_score <= 0:
+                result = False
+        return result
         
     def print_info(self):
         print(self.idx, self.ref_name, self.sv_pos, self.sv_stop, self.sv_type, self.length, self.gt, self.is_agg, self.is_sec_fil, self.is_third_fil)
@@ -316,8 +363,12 @@ class struc_var:
             rela_score_1 = self.cal_rela_score(self.score_before_hap1, self.score_after_hap1)
             rela_score_2 = self.cal_rela_score(self.score_before_hap2, self.score_after_hap2)
             
-            res_hap1 = self.check_tp(rela_len_1, rela_score_1)
-            res_hap2 = self.check_tp(rela_len_2, rela_score_2)
+            if not wrong_len:
+                res_hap1 = self.check_tp(rela_len_1, rela_score_1)
+                res_hap2 = self.check_tp(rela_len_2, rela_score_2)
+            else:
+                res_hap1 = self.check_tp_wlen(rela_len_1, rela_score_1)
+                res_hap2 = self.check_tp_wlen(rela_len_2, rela_score_2)
             
             if res_hap1 and res_hap2:
                 if abs(rela_len_1 - 1) <= abs(rela_len_2 - 1):
@@ -334,7 +385,6 @@ class struc_var:
                 else:
                     return (res_hap2, rela_len_2, rela_score_2)
             
-        
 class alignment:
     def __init__(self, idx, agt_rec, hap, query_length):
         self.idx = idx
