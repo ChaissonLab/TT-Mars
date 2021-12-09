@@ -36,9 +36,9 @@ TT-Mars: S**t**ructural Varian**t**s Assess**m**ent B**a**sed on Haplotype-**r**
 
 ## Optional arguments
 
-1. combine.py:
-`-v/--vcf_out`: output results as vcf files, must be used together with `-f/--vcf_file`.
-`-f VCF_FILE/--vcf_file VCF_FILE`: input vcf file, use as template.
+1. For combine.py:  
+`-v/--vcf_out`: output results as vcf files (tp (true positive), fp (false positive) and na), must be used together with `-f/--vcf_file`.  
+`-f VCF_FILE/--vcf_file VCF_FILE`: input vcf file, use as template.  
 
 
 ## Example Output
