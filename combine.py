@@ -1,13 +1,39 @@
 import csv
 import sys
 
-output_dir = sys.argv[1] + "/"
-no_X_chr = sys.argv[2]
+import argparse
 
-if int(no_X_chr) == 1:
+parser = argparse.ArgumentParser()
+parser.add_argument("output_dir",
+                    help="output directory")
+parser.add_argument("no_X_chr",
+                    choices=[1, 2],
+                    help="male sample 1, female sample 2",
+                    type=int)
+parser.add_argument("-v",
+                    "--vcf_out",
+                    help="output results as vcf files, must be used together with -f/--vcf_file",
+                    action="store_true")
+parser.add_argument("-f",
+                    "--vcf_file",
+                    help="input vcf file, use as template")
+args = parser.parse_args()
+
+if bool(args.vcf_out) ^ bool(args.vcf_file):
+    parser.error('-v/--vcf_out and -f/--vcf_file must be given together')
+
+output_dir = args.output_dir + "/"
+
+if int(args.no_X_chr) == 1:
     if_male = True
 else:
     if_male = False
+    
+if args.vcf_out:
+    if_vcf = True
+    in_vcf_file = args.vcf_file
+else:
+    if_vcf = False
     
 other_sv_res_file = output_dir+"ttmars_res.txt"
 regdup_res_file = output_dir+"ttmars_regdup_res.txt"
@@ -72,6 +98,36 @@ for key in sv_dict:
     g.write(str(res[2]))
     g.write("\n")
 g.close()
+
+#if output vcf
+if if_vcf:
+    from pysam import VariantFile
+    vcf_in = VariantFile(in_vcf_file)
+    vcfh = vcf_in.header
+    #vcfh.add_meta('INFO', items=[('ID',"TTMars"), ('Number',1), ('Type','String'),('Description','TT-Mars NA12878 results: TP, FA, NA or .')])
+    vcf_out_tp = VariantFile(output_dir+"ttmars_tp.vcf", 'w', header=vcfh)
+    vcf_out_fp = VariantFile(output_dir+"ttmars_fp.vcf", 'w', header=vcfh)
+    vcf_out_na = VariantFile(output_dir+"ttmars_na.vcf", 'w', header=vcfh)
+    
+    for rec in vcf_in.fetch():
+        ref_name = rec.chrom
+        sv_type = rec.info['SVTYPE']
+        sv_pos = rec.pos
+        sv_end = rec.stop
+        
+        try:
+            validation_res = sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)][2]
+            if validation_res == 'True':
+                vcf_out_tp.write(rec)
+            elif validation_res == 'False':
+                vcf_out_fp.write(rec)
+        except:
+            vcf_out_na.write(rec)
+
+    vcf_out_tp.close()
+    vcf_out_fp.close()
+    vcf_out_na.close()
+    vcf_in.close()    
 
 #remove files
 import os

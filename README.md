@@ -19,7 +19,7 @@ TT-Mars: S**t**ructural Varian**t**s Assess**m**ent B**a**sed on Haplotype-**r**
 
 `python combine.py output_dir num_X_chr`
 
-## Positional parameters
+## Positional arguments
 
 1. `output_dir`: Output directory.
 2. `if_hg38`: if reference is hg38 (True/False). 
@@ -33,6 +33,13 @@ TT-Mars: S**t**ructural Varian**t**s Assess**m**ent B**a**sed on Haplotype-**r**
 10. `seq_resolved`: if assess INS by sequences (True/False). 
 11. `num_X_chr`: if male sample: 1; if female sample: 2.
 12. `wlen_tp`: if TT-Mars validates wrong-length calls as TP (True/False).
+
+## Optional arguments
+
+1. combine.py:
+`-v/--vcf_out`: output results as vcf files, must be used together with `-f/--vcf_file`.
+`-f VCF_FILE/--vcf_file VCF_FILE`: input vcf file, use as template.
+
 
 ## Example Output
 
