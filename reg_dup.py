@@ -1,3 +1,61 @@
+##########################################################
+##########################################################
+#arguments
+
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("output_dir",
+                    help="output directory")
+parser.add_argument("centromere_file",
+                    help="centromere file")
+parser.add_argument("assem1_non_cov_regions_file",
+                    help="Regions that are not covered on hap1")
+parser.add_argument("assem2_non_cov_regions_file",
+                    help="Regions that are not covered on hap2")
+parser.add_argument("vcf_file",
+                    help="input vcf file")
+parser.add_argument("ref_file",
+                    help="reference file")
+parser.add_argument("query_file1",
+                    help="assembly fasta file hap1")
+parser.add_argument("query_file2",
+                    help="assembly fasta file hap2")
+parser.add_argument("liftover_file1",
+                    help="liftover file hap1")
+parser.add_argument("liftover_file2",
+                    help="liftover file hap2")
+parser.add_argument("tandem_file",
+                    help="tandem repeats regions")
+# parser.add_argument("if_hg38_input",
+#                     help="if reference is hg38 or not")
+parser.add_argument("-n",
+                    "--not_hg38",
+                    help="if reference is NOT hg38 (hg19)",
+                    action="store_true")
+# parser.add_argument("if_passonly_input",
+#                     help="if consider PASS calls only or not")
+parser.add_argument("-p",
+                    "--passonly",
+                    help="if consider PASS calls only",
+                    action="store_true")
+# parser.add_argument("seq_resolved_input",
+#                     help="if consider sequence resolved calls (INS) or not")
+parser.add_argument("-s",
+                    "--seq_resolved",
+                    help="f consider sequence resolved calls (INS)",
+                    action="store_true")
+# parser.add_argument("wrong_len_input",
+#                     help="if count wrong length calls as True")
+parser.add_argument("-w",
+                    "--wrong_len",
+                    help="if count wrong length calls as True",
+                    action="store_true")
+parser.add_argument("-g",
+                    "--gt_vali",
+                    help="conduct genotype validation",
+                    action="store_true")
+args = parser.parse_args()
+
 ##################################################################################
 ##################################################################################
 from Bio import SeqIO
@@ -6,20 +64,14 @@ import math
 #pysam: https://pysam.readthedocs.io/en/latest/usage.html
 import pysam
 #print(pysam.__version__)
-
 from Bio.Seq import Seq
 from Bio import pairwise2
-
 import sys 
 import numpy as np
-
 import random
-
 import mappy
 import os
-
 import random
-
 sys.path.insert(0, '../')
 import get_align_info
 import get_conf_int
@@ -55,13 +107,10 @@ query_file2 = sys.argv[9]
 liftover_file1 = sys.argv[10]
 liftover_file2 = sys.argv[11]
 tandem_file = sys.argv[12]
-
 liftover_file1_0 = sys.argv[13]
 liftover_file2_0 = sys.argv[14]
-
 if_passonly_input = sys.argv[15]
-
-wrong_len_input = sys.argv[15]
+wrong_len_input = sys.argv[16]
 
 #constants
 

@@ -1,3 +1,63 @@
+##########################################################
+##########################################################
+#arguments
+
+import argparse
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument("output_dir",
+                    help="output directory")
+parser.add_argument("centromere_file",
+                    help="centromere file")
+parser.add_argument("assem1_non_cov_regions_file",
+                    help="Regions that are not covered on hap1")
+parser.add_argument("assem2_non_cov_regions_file",
+                    help="Regions that are not covered on hap2")
+parser.add_argument("vcf_file",
+                    help="input vcf file")
+parser.add_argument("ref_file",
+                    help="reference file")
+parser.add_argument("query_file1",
+                    help="assembly fasta file hap1")
+parser.add_argument("query_file2",
+                    help="assembly fasta file hap2")
+parser.add_argument("liftover_file1",
+                    help="liftover file hap1")
+parser.add_argument("liftover_file2",
+                    help="liftover file hap2")
+parser.add_argument("tandem_file",
+                    help="tandem repeats regions")
+# parser.add_argument("if_hg38_input",
+#                     help="if reference is hg38 or not")
+parser.add_argument("-n",
+                    "--not_hg38",
+                    help="if reference is NOT hg38 (hg19)",
+                    action="store_true")
+# parser.add_argument("if_passonly_input",
+#                     help="if consider PASS calls only or not")
+parser.add_argument("-p",
+                    "--passonly",
+                    help="if consider PASS calls only",
+                    action="store_true")
+# parser.add_argument("seq_resolved_input",
+#                     help="if consider sequence resolved calls (INS) or not")
+parser.add_argument("-s",
+                    "--seq_resolved",
+                    help="f consider sequence resolved calls (INS)",
+                    action="store_true")
+# parser.add_argument("wrong_len_input",
+#                     help="if count wrong length calls as True")
+parser.add_argument("-w",
+                    "--wrong_len",
+                    help="if count wrong length calls as True",
+                    action="store_true")
+parser.add_argument("-g",
+                    "--gt_vali",
+                    help="conduct genotype validation",
+                    action="store_true")
+args = parser.parse_args()
+
 import sys
 import csv
 import pysam
@@ -8,29 +68,47 @@ import get_conf_int
 import validate
 import get_align_info
 
-##########################################################
-##########################################################
-#input
-output_dir = sys.argv[1] + "/"
-if_hg38_input = sys.argv[2]
-centromere_file = sys.argv[3]
+output_dir = args.output_dir + "/"
+# if_hg38_input = args.if_hg38_input
+centromere_file = args.centromere_file
 #assembly bam files
-assem1_non_cov_regions_file = sys.argv[4]
-assem2_non_cov_regions_file = sys.argv[5]
+assem1_non_cov_regions_file = args.assem1_non_cov_regions_file
+assem2_non_cov_regions_file = args.assem2_non_cov_regions_file
 #avg_read_depth = sys.argv[6]
 #read_bam_file = sys.argv[6]
-vcf_file = sys.argv[6]
+vcf_file = args.vcf_file
 #ref fasta file
-ref_file = sys.argv[7]
+ref_file = args.ref_file
 #assembly fasta files
-query_file1 = sys.argv[8]
-query_file2 = sys.argv[9]
-liftover_file1 = sys.argv[10]
-liftover_file2 = sys.argv[11]
-tandem_file = sys.argv[12]
-if_passonly_input = sys.argv[13]
-seq_resolved_input = sys.argv[14]
-wrong_len_input = sys.argv[15]
+query_file1 = args.query_file1
+query_file2 = args.query_file2
+liftover_file1 = args.liftover_file1
+liftover_file2 = args.liftover_file2
+tandem_file = args.tandem_file
+# if_passonly_input = args.if_passonly_input
+# seq_resolved_input = args.seq_resolved_input
+# wrong_len_input = args.wrong_len_input
+
+# output_dir = sys.argv[1] + "/"
+# if_hg38_input = sys.argv[2]
+# centromere_file = sys.argv[3]
+# #assembly bam files
+# assem1_non_cov_regions_file = sys.argv[4]
+# assem2_non_cov_regions_file = sys.argv[5]
+# #avg_read_depth = sys.argv[6]
+# #read_bam_file = sys.argv[6]
+# vcf_file = sys.argv[6]
+# #ref fasta file
+# ref_file = sys.argv[7]
+# #assembly fasta files
+# query_file1 = sys.argv[8]
+# query_file2 = sys.argv[9]
+# liftover_file1 = sys.argv[10]
+# liftover_file2 = sys.argv[11]
+# tandem_file = sys.argv[12]
+# if_passonly_input = sys.argv[13]
+# seq_resolved_input = sys.argv[14]
+# wrong_len_input = sys.argv[15]
 
 # liftover_file1_0 = sys.argv[12]
 # liftover_file2_0 = sys.argv[13]
@@ -41,21 +119,21 @@ wrong_len_input = sys.argv[15]
 
 #liftover interval
 interval = 20
-if_hg38 = False
-if if_hg38_input == "True":
-    if_hg38 = True
+if_hg38 = not args.not_hg38
+# if if_hg38_input == "True":
+#     if_hg38 = True
 #if pass_only
-if_pass_only = False
-if if_passonly_input == "True":
-    if_pass_only = True
+if_pass_only = args.passonly
+# if if_passonly_input == "True":
+#     if_pass_only = True
 #if seq_resolved
-seq_resolved = False
-if seq_resolved_input == "True":
-    seq_resolved = True
+seq_resolved = args.seq_resolved
+# if seq_resolved_input == "True":
+#     seq_resolved = True
 #if include wrong length as TP
-wrong_len = False
-if wrong_len_input == "True":
-    wrong_len = True
+wrong_len = args.wrong_len
+# if wrong_len_input == "True":
+#     wrong_len = True
 #chr names
 chr_list = []
 if if_hg38:
@@ -198,6 +276,10 @@ def write_vali_info(sv_list):
         g.write(str(res[1]) + "\t")
         g.write(str(res[2]) + "\t")
         g.write(str(res[0]))
+        
+        if args.gt_vali:
+            g.write("\t" + str(res[3]))
+        
         g.write("\n")
     g.close()
     
@@ -370,20 +452,29 @@ class struc_var:
                 res_hap1 = self.check_tp_wlen(rela_len_1, rela_score_1)
                 res_hap2 = self.check_tp_wlen(rela_len_2, rela_score_2)
             
+            gt_validate = False
+            if args.gt_vali:
+                if res_hap1 and res_hap2:
+                    if self.gt == (1,1):
+                        gt_validate = True
+                elif res_hap1 or res_hap2:
+                    if self.gt == (1,0) or self.gt == (0,1):
+                        gt_validate = True
+                
             if res_hap1 and res_hap2:
                 if abs(rela_len_1 - 1) <= abs(rela_len_2 - 1):
-                    return (res_hap1, rela_len_1, rela_score_1)
+                    return (res_hap1, rela_len_1, rela_score_1, gt_validate)
                 else:
-                    return (res_hap2, rela_len_2, rela_score_2)
+                    return (res_hap2, rela_len_2, rela_score_2, gt_validate)
             elif res_hap1:
-                return (res_hap1, rela_len_1, rela_score_1)
+                return (res_hap1, rela_len_1, rela_score_1, gt_validate)
             elif res_hap2:
-                return (res_hap2, rela_len_2, rela_score_2)
+                return (res_hap2, rela_len_2, rela_score_2, gt_validate)
             else:
                 if abs(rela_len_1 - 1) <= abs(rela_len_2 - 1):
-                    return (res_hap1, rela_len_1, rela_score_1)
+                    return (res_hap1, rela_len_1, rela_score_1, gt_validate)
                 else:
-                    return (res_hap2, rela_len_2, rela_score_2)
+                    return (res_hap2, rela_len_2, rela_score_2, gt_validate)
             
 class alignment:
     def __init__(self, idx, agt_rec, hap, query_length):
@@ -430,7 +521,6 @@ def main():
     #build map and get validation info on hap2
     contig_name_list_2, contig_pos_list_2, contig_name_dict_2 = get_align_info.build_map_compress(chr_len, interval, liftover_file2, if_hg38)
     
-    
     #index SVs
     f = pysam.VariantFile(vcf_file,'r')
     sv_list = []
@@ -469,14 +559,18 @@ def main():
             continue
 
         #get gt
-        #only taking the first sample genotype
+        #only taking the first sample genotype 
+        if args.gt_vali:
+            sv_gt = rec.samples[0]["GT"]
+            #bad genotype
+            if sv_gt not in [(1, 1), (1, 0), (0, 1)]:
+                sv_gt = None
+        else:
+            sv_gt = None
+        
     #     if len(rec.samples.values()) != 1:
     #         raise Exception("Wrong number of sample genotype(s)")
-    #     gts = [s['GT'] for s in rec.samples.values()]    
-        sv_gt = ""
-#         for s in rec.samples.values():
-#             sv_gt = s['GT']
-#             break
+    #     gts = [s['GT'] for s in rec.samples.values()] 
         
         sv_list.append(struc_var(count, rec.chrom, sv_type, rec.pos, rec.stop, sv_len, sv_gt))   
         
