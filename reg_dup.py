@@ -26,6 +26,10 @@ parser.add_argument("liftover_file2",
                     help="liftover file hap2")
 parser.add_argument("tandem_file",
                     help="tandem repeats regions")
+parser.add_argument("liftover_file1_0",
+                    help="liftover file hap1 asm to ref")
+parser.add_argument("liftover_file2_0",
+                    help="liftover file hap2 asm to ref")
 # parser.add_argument("if_hg38_input",
 #                     help="if reference is hg38 or not")
 parser.add_argument("-n",
@@ -40,10 +44,10 @@ parser.add_argument("-p",
                     action="store_true")
 # parser.add_argument("seq_resolved_input",
 #                     help="if consider sequence resolved calls (INS) or not")
-parser.add_argument("-s",
-                    "--seq_resolved",
-                    help="f consider sequence resolved calls (INS)",
-                    action="store_true")
+# parser.add_argument("-s",
+#                     "--seq_resolved",
+#                     help="f consider sequence resolved calls (INS)",
+#                     action="store_true")
 # parser.add_argument("wrong_len_input",
 #                     help="if count wrong length calls as True")
 parser.add_argument("-w",
@@ -79,6 +83,28 @@ import validate
 
 ##################################################################################
 ##################################################################################
+output_dir = args.output_dir + "/"
+# if_hg38_input = args.if_hg38_input
+centromere_file = args.centromere_file
+#assembly bam files
+assem1_non_cov_regions_file = args.assem1_non_cov_regions_file
+assem2_non_cov_regions_file = args.assem2_non_cov_regions_file
+#avg_read_depth = sys.argv[6]
+#read_bam_file = sys.argv[6]
+vcf_file = args.vcf_file
+#ref fasta file
+ref_file = args.ref_file
+#assembly fasta files
+query_file1 = args.query_file1
+query_file2 = args.query_file2
+liftover_file1 = args.liftover_file1
+liftover_file2 = args.liftover_file2
+tandem_file = args.tandem_file
+liftover_file1_0 = args.liftover_file1_0
+liftover_file2_0 = args.liftover_file2_0
+
+##################################################################################
+##################################################################################
 # #hg38 chr length
 # chr_len_list = [248956422, 242193529, 198295559, 190214555, 181538259, 170805979,
 #  159345973, 145138636, 138394717, 133797422, 135086622, 133275309,
@@ -87,46 +113,49 @@ import validate
 
 reg_dup_upper_len = 10000000
 
-output_dir = sys.argv[1] + "/"
-if_hg38_input = sys.argv[2]
-centromere_file = sys.argv[3]
-#exclude_assem1_non_cover_file = sys.argv[4]
-#exclude_assem2_non_cover_file = sys.argv[5]
-#exclude_high_depth_file = sys.argv[6]
-#assembly bam files
-assem1_non_cov_regions_file = sys.argv[4]
-assem2_non_cov_regions_file = sys.argv[5]
-#avg_read_depth = sys.argv[6]
-#read_bam_file = sys.argv[6]
-vcf_file = sys.argv[6]
-#ref fasta file
-ref_file = sys.argv[7]
-#assembly fasta files
-query_file1 = sys.argv[8]
-query_file2 = sys.argv[9]
-liftover_file1 = sys.argv[10]
-liftover_file2 = sys.argv[11]
-tandem_file = sys.argv[12]
-liftover_file1_0 = sys.argv[13]
-liftover_file2_0 = sys.argv[14]
-if_passonly_input = sys.argv[15]
-wrong_len_input = sys.argv[16]
+# output_dir = sys.argv[1] + "/"
+# if_hg38_input = sys.argv[2]
+# centromere_file = sys.argv[3]
+# assem1_non_cov_regions_file = sys.argv[4]
+# assem2_non_cov_regions_file = sys.argv[5]
+# vcf_file = sys.argv[6]
+# #ref fasta file
+# ref_file = sys.argv[7]
+# #assembly fasta files
+# query_file1 = sys.argv[8]
+# query_file2 = sys.argv[9]
+# liftover_file1 = sys.argv[10]
+# liftover_file2 = sys.argv[11]
+# tandem_file = sys.argv[12]
+# liftover_file1_0 = sys.argv[13]
+# liftover_file2_0 = sys.argv[14]
+# if_passonly_input = sys.argv[15]
+# wrong_len_input = sys.argv[16]
 
 #constants
 
 #liftover interval
 interval = 20
-if_hg38 = False
-if if_hg38_input == "True":
-    if_hg38 = True
+
+if_hg38 = not args.not_hg38
+# if_hg38 = False
+# if if_hg38_input == "True":
+#     if_hg38 = True
+
 #if pass_only
-if_pass_only = False
-if if_passonly_input == "True":
-    if_pass_only = True
+if_pass_only = args.passonly
+# if_pass_only = False
+# if if_passonly_input == "True":
+#     if_pass_only = True
 #if include wrong length as TP
-wrong_len = False
-if wrong_len_input == "True":
-    wrong_len = True
+wrong_len = args.wrong_len
+# wrong_len = False
+# if wrong_len_input == "True":
+#     wrong_len = True
+    
+##################################################################################
+##################################################################################
+    
 #chr names
 chr_list = []
 if if_hg38:
@@ -168,7 +197,6 @@ tandem_start_list, tandem_end_list = get_align_info.get_chr_tandem_shart_end_lis
 query_fasta_file1 = pysam.FastaFile(query_file1)
 query_fasta_file2 = pysam.FastaFile(query_file2)
 ref_fasta_file = pysam.FastaFile(ref_file)
-
 
 ##################################################################################
 ##################################################################################
@@ -379,20 +407,29 @@ class struc_var:
                 res_hap1 = self.check_tp_wlen(rela_len_1, rela_score_1)
                 res_hap2 = self.check_tp_wlen(rela_len_2, rela_score_2)
             
+            gt_validate = False
+            if args.gt_vali:
+                if res_hap1 and res_hap2:
+                    if self.gt == (1,1):
+                        gt_validate = True
+                elif res_hap1 or res_hap2:
+                    if self.gt == (1,0) or self.gt == (0,1):
+                        gt_validate = True
+                
             if res_hap1 and res_hap2:
                 if abs(rela_len_1 - 1) <= abs(rela_len_2 - 1):
-                    return (res_hap1, rela_len_1, rela_score_1)
+                    return (res_hap1, rela_len_1, rela_score_1, gt_validate)
                 else:
-                    return (res_hap2, rela_len_2, rela_score_2)
+                    return (res_hap2, rela_len_2, rela_score_2, gt_validate)
             elif res_hap1:
-                return (res_hap1, rela_len_1, rela_score_1)
+                return (res_hap1, rela_len_1, rela_score_1, gt_validate)
             elif res_hap2:
-                return (res_hap2, rela_len_2, rela_score_2)
+                return (res_hap2, rela_len_2, rela_score_2, gt_validate)
             else:
                 if abs(rela_len_1 - 1) <= abs(rela_len_2 - 1):
-                    return (res_hap1, rela_len_1, rela_score_1)
+                    return (res_hap1, rela_len_1, rela_score_1, gt_validate)
                 else:
-                    return (res_hap2, rela_len_2, rela_score_2)
+                    return (res_hap2, rela_len_2, rela_score_2, gt_validate)
             
         
 class alignment:
@@ -448,6 +485,10 @@ def write_vali_info(sv_list):
         g.write(str(res[1]) + "\t")
         g.write(str(res[2]) + "\t")
         g.write(str(res[0]))
+        
+        if args.gt_vali:
+            g.write("\t" + str(res[3]))
+            
         g.write("\n")
     g.close()
     
@@ -632,8 +673,6 @@ def getSeqRec(fasta_file, seq_name):
     seq = fasta_file.fetch(seq_name)
     return seq
 
-
-
 ##################################################################################
 ##################################################################################
 #build lists for excluded SV positions
@@ -703,13 +742,14 @@ for count, rec in enumerate(f.fetch()):
         continue
     
     #get gt
-    #only taking the first sample genotype
-#     if len(rec.samples.values()) != 1:
-#         raise Exception("Wrong number of sample genotype(s)")
-#     gts = [s['GT'] for s in rec.samples.values()]    
-    for s in rec.samples.values():
-        sv_gt = s['GT']
-        break
+    #only taking the first sample genotype 
+    if args.gt_vali:
+        sv_gt = rec.samples[0]["GT"]
+        #bad genotype
+        if sv_gt not in [(1, 1), (1, 0), (0, 1)]:
+            sv_gt = None
+    else:
+        sv_gt = None
     
     sv_list.append(struc_var(count, rec.chrom, sv_type, rec.pos, rec.stop, sv_len, sv_gt))
 f.close()

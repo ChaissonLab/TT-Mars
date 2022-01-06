@@ -16,7 +16,11 @@ parser.add_argument("-v",
                     action="store_true")
 parser.add_argument("-f",
                     "--vcf_file",
-                    help="input vcf file, use as template")
+                    help="input vcf file using as template, must be used together with -v/--vcf_out")
+parser.add_argument("-g",
+                    "--gt_vali",
+                    help="conduct genotype validation",
+                    action="store_true")
 args = parser.parse_args()
 
 if bool(args.vcf_out) ^ bool(args.vcf_file):
@@ -49,22 +53,38 @@ with open(regdup_res_file) as f:
 f.close()
 
 sv_dict = {}
+#results of SVs other than interspersed DUP
 for rec in other_sv_res:
     ref_name = rec[0]
     sv_pos = int(rec[1])
     sv_end = int(rec[2])
     sv_type = rec[3]
-    sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)] = [rec[4], rec[5], rec[6]]
+    
+    if not args.gt_vali:
+        sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)] = [rec[4], rec[5], rec[6]]
+    else:
+        sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)] = [rec[4], rec[5], rec[6], rec[7]]
+#interspersed DUP
 for rec in regdup_res:
     ref_name = rec[0]
     sv_pos = int(rec[1])
     sv_end = int(rec[2])
     sv_type = rec[3]
     if (ref_name, int(sv_pos), int(sv_end), sv_type) in sv_dict:
-        if rec[6] == 'True' and sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)][2] == 'False':
-            sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)] = [rec[4], rec[5], rec[6]]
+        if not args.gt_vali:
+            if rec[6] == 'True' and sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)][2] == 'False':
+                sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)] = [rec[4], rec[5], rec[6]]
+        else:
+            if rec[6] == 'True' and sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)][2] == 'False':
+                sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)] = [rec[4], rec[5], rec[6], rec[7]]
+            elif rec[6] == 'True' and sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)][2] == 'True':
+                if rec[7] == 'True' and sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)][3] == 'False':
+                    sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)] = [rec[4], rec[5], rec[6], rec[7]]
     else:
-        sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)] = [rec[4], rec[5], rec[6]]
+        if not args.gt_vali:
+            sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)] = [rec[4], rec[5], rec[6]]
+        else:
+            sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)] = [rec[4], rec[5], rec[6], rec[7]]
         
 if if_male:
     chrx_res_file = output_dir+"ttmars_chrx_res.txt"
@@ -79,11 +99,28 @@ if if_male:
         sv_pos = int(rec[1])
         sv_end = int(rec[2])
         sv_type = rec[3]
+        
         if (ref_name, int(sv_pos), int(sv_end), sv_type) in sv_dict:
-            if rec[6] == 'True' and sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)][2] == 'False':
-                sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)] = [rec[4], rec[5], rec[6]]
+            if not args.gt_vali:
+                if rec[6] == 'True' and sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)][2] == 'False':
+                    sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)] = [rec[4], rec[5], rec[6]]
+            else:
+                if rec[6] == 'True' and sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)][2] == 'False':
+                    sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)] = [rec[4], rec[5], rec[6], rec[7]]
+                elif rec[6] == 'True' and sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)][2] == 'True':
+                    if rec[7] == 'True' and sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)][3] == 'False':
+                        sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)] = [rec[4], rec[5], rec[6], rec[7]]
         else:
-            sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)] = [rec[4], rec[5], rec[6]]    
+            if not args.gt_vali:
+                sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)] = [rec[4], rec[5], rec[6]]
+            else:
+                sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)] = [rec[4], rec[5], rec[6], rec[7]]
+        
+#         if (ref_name, int(sv_pos), int(sv_end), sv_type) in sv_dict:
+#             if rec[6] == 'True' and sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)][2] == 'False':
+#                 sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)] = [rec[4], rec[5], rec[6]]
+#         else:
+#             sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)] = [rec[4], rec[5], rec[6]]    
 
 g = open(output_dir + "/ttmars_combined_res.txt", "w")
 for key in sv_dict:
@@ -96,6 +133,10 @@ for key in sv_dict:
     g.write(str(res[0]) + "\t")
     g.write(str(res[1]) + "\t")
     g.write(str(res[2]))
+    
+    if args.gt_vali:
+        g.write("\t" + str(res[3]))
+    
     g.write("\n")
 g.close()
 
@@ -105,6 +146,7 @@ if if_vcf:
     vcf_in = VariantFile(in_vcf_file)
     vcfh = vcf_in.header
     #vcfh.add_meta('INFO', items=[('ID',"TTMars"), ('Number',1), ('Type','String'),('Description','TT-Mars NA12878 results: TP, FA, NA or .')])
+    vcfh.add_meta('INFO', items=[('ID',"GT_vali"), ('Number',1), ('Type','String'),('Description','TT-Mars GT validation (require flag -g): True, False or NA')])
     vcf_out_tp = VariantFile(output_dir+"ttmars_tp.vcf", 'w', header=vcfh)
     vcf_out_fp = VariantFile(output_dir+"ttmars_fp.vcf", 'w', header=vcfh)
     vcf_out_na = VariantFile(output_dir+"ttmars_na.vcf", 'w', header=vcfh)
@@ -118,6 +160,8 @@ if if_vcf:
         try:
             validation_res = sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)][2]
             if validation_res == 'True':
+                if args.gt_vali:
+                    rec.info['GT_vali'] = sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)][3]
                 vcf_out_tp.write(rec)
             elif validation_res == 'False':
                 vcf_out_fp.write(rec)
