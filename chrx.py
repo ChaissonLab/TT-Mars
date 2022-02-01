@@ -44,7 +44,7 @@ parser.add_argument("-p",
 #                     help="if consider sequence resolved calls (INS) or not")
 parser.add_argument("-s",
                     "--seq_resolved",
-                    help="f consider sequence resolved calls (INS)",
+                    help="if consider sequence resolved calls (INS)",
                     action="store_true")
 # parser.add_argument("wrong_len_input",
 #                     help="if count wrong length calls as True")
