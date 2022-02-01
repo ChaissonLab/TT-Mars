@@ -3,6 +3,8 @@ import sys
 
 import argparse
 
+import fn
+
 parser = argparse.ArgumentParser()
 parser.add_argument("output_dir",
                     help="output directory")
@@ -16,15 +18,28 @@ parser.add_argument("-v",
                     action="store_true")
 parser.add_argument("-f",
                     "--vcf_file",
-                    help="input vcf file using as template, must be used together with -v/--vcf_out")
+                    help="input vcf file using as template, must be used together with -v/--vcf_out or -n/--false_neg")
 parser.add_argument("-g",
                     "--gt_vali",
                     help="conduct genotype validation",
                     action="store_true")
+parser.add_argument("-n",
+                    "--false_neg",
+                    help="output false negative, must be used together with -t/--truth_file and -f/--vcf_file",
+                    action="store_true")
+parser.add_argument("-t",
+                    "--truth_file",
+                    help="input truth vcf file, must be used together with -n/--false_neg")
 args = parser.parse_args()
 
 if bool(args.vcf_out) ^ bool(args.vcf_file):
-    parser.error('-v/--vcf_out and -f/--vcf_file must be given together')
+    parser.error('-f/--vcf_file must be used with -v/--vcf_out')
+    
+if bool(args.false_neg) ^ bool(args.truth_file):
+    parser.error('-t/--truth_file must be used with -n/--false_neg')
+    
+if bool(args.false_neg) ^ bool(args.vcf_file):
+    parser.error('-f/--vcf_file must be used with -n/--false_neg')
 
 output_dir = args.output_dir + "/"
 
@@ -39,6 +54,12 @@ if args.vcf_out:
 else:
     if_vcf = False
     
+if args.false_neg:
+    output_fn = True
+    in_truth_file = args.truth_file
+else:
+    output_fn = False
+    
 other_sv_res_file = output_dir+"ttmars_res.txt"
 regdup_res_file = output_dir+"ttmars_regdup_res.txt"
 
@@ -51,6 +72,21 @@ with open(regdup_res_file) as f:
     reader = csv.reader(f, delimiter="\t")
     regdup_res = list(reader)
 f.close()
+
+#if output fn
+if output_fn:
+    #input truth set
+    sv_list = fn.idx_sv(in_truth_file)
+    #input candidate set
+    cand_sv_list = fn.idx_sv(in_vcf_file)
+
+    sv_list_sorted = fn.sort_sv_list(sv_list)
+    cand_sv_list_sorted = fn.sort_sv_list(cand_sv_list)
+
+    tp_base_ctr = fn.count_tp_base_dist_only(sv_list_sorted, cand_sv_list_sorted)
+    recall = tp_base_ctr / len(sv_list_sorted)
+    
+    print("Recall of candidate callset: " + str(recall))
 
 sv_dict = {}
 #results of SVs other than interspersed DUP
@@ -172,7 +208,7 @@ if if_vcf:
     vcf_out_fp.close()
     vcf_out_na.close()
     vcf_in.close()    
-
+    
 #remove files
 import os
 for name in ['assem1_non_cov_regions.bed', 'assem2_non_cov_regions.bed',
