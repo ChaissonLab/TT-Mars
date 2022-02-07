@@ -480,11 +480,14 @@ def count_tp_base_dist_only(sv_list_sorted, cand_sv_list_sorted):
 
 
 #CONST
+###########################################################
+#fn const
 max_dist_to_merge = 1500
 max_dist_search = 1000
 ratio_size_lb = 0.7
-if_hg38 = True
 
+###########################################################
+#ttmars const
 chr_list = ["chr1", "chr2", "chr3", "chr4", "chr5",
             "chr6", "chr7", "chr8", "chr9", "chr10",
             "chr11", "chr12", "chr13", "chr14", "chr15",
@@ -500,7 +503,9 @@ valid_types = ['DEL', 'INS', 'INV', 'DUP:TANDEM', 'DUP']
 if_pass_only = True
 wrong_len = False
 gt_vali = False
+if_hg38 = True
 
+###########################################################
 
 def main():
     #hg38 samples
