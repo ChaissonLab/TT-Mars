@@ -1,5 +1,33 @@
 from pysam import VariantFile
 
+#CONST
+###########################################################
+#fn const
+max_dist_to_merge = 1500
+max_dist_search = 1000
+ratio_size_lb = 0.7
+
+###########################################################
+#ttmars const
+chr_list = ["chr1", "chr2", "chr3", "chr4", "chr5",
+            "chr6", "chr7", "chr8", "chr9", "chr10",
+            "chr11", "chr12", "chr13", "chr14", "chr15",
+            "chr16", "chr17", "chr18", "chr19", "chr20",
+            "chr21", "chr22", "chrX"]
+
+memory_limit = 100000
+memory_min = 10
+
+#valid types
+valid_types = ['DEL', 'INS', 'INV', 'DUP:TANDEM', 'DUP']
+#pass_only
+if_pass_only = True
+wrong_len = False
+gt_vali = False
+if_hg38 = True
+
+###########################################################
+
 #first_filter: type, PASS, chr_name
 def first_filter(sv, sv_type):
     #type filter
@@ -477,33 +505,6 @@ def count_tp_base_dist_only(sv_list_sorted, cand_sv_list_sorted):
 
         cand_start_idx = new_cand_start_idx
     return tp_base_ctr
-
-
-#CONST
-###########################################################
-#fn const
-max_dist_to_merge = 1500
-max_dist_search = 1000
-ratio_size_lb = 0.7
-
-###########################################################
-#ttmars const
-chr_list = ["chr1", "chr2", "chr3", "chr4", "chr5",
-            "chr6", "chr7", "chr8", "chr9", "chr10",
-            "chr11", "chr12", "chr13", "chr14", "chr15",
-            "chr16", "chr17", "chr18", "chr19", "chr20",
-            "chr21", "chr22", "chrX"]
-
-memory_limit = 100000
-memory_min = 10
-
-#valid types
-valid_types = ['DEL', 'INS', 'INV', 'DUP:TANDEM', 'DUP']
-#pass_only
-if_pass_only = True
-wrong_len = False
-gt_vali = False
-if_hg38 = True
 
 ###########################################################
 
