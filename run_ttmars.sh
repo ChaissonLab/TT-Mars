@@ -27,23 +27,8 @@ tr_file=hg38_tandem_repeats.bed
 #1: if male sample; 2: if female sample
 num_X_chr=1
 
-python ttmars.py "$output_dir" "$centro_file" "$files_dir"/assem1_non_cov_regions.bed "$files_dir"/assem2_non_cov_regions.bed "$vcf_file" "$reference" "$asm_h1" "$asm_h2" "$files_dir"/lo_pos_assem1_result_compressed.bed "$files_dir"/lo_pos_assem2_result_compressed.bed "$tr_file"
+python ttmars.py "$output_dir" "$centro_file" "$files_dir"/assem1_non_cov_regions.bed "$files_dir"/assem2_non_cov_regions.bed "$vcf_file" "$reference" "$asm_h1" "$asm_h2" "$files_dir"/lo_pos_assem1_result_compressed.bed "$files_dir"/lo_pos_assem2_result_compressed.bed "$files_dir"/lo_pos_assem1_0_result_compressed.bed "$files_dir"/lo_pos_assem2_0_result_compressed.bed "$tr_file"
 # optional arguments: 
-# -n/--not_hg38: if reference is NOT hg38 (hg19).
-# -p/--passonly: if consider PASS calls only. 
-# -s/--seq_resolved: if consider sequence resolved calls (INS). 
-# -w/--wrong_len: if count wrong length calls as True.
-# -g/--gt_vali: conduct genotype validation.
-
-python reg_dup.py "$output_dir" "$centro_file" "$files_dir"/assem1_non_cov_regions.bed "$files_dir"/assem2_non_cov_regions.bed "$vcf_file" "$reference" "$asm_h1" "$asm_h2" "$files_dir"/lo_pos_assem1_result_compressed.bed "$files_dir"/lo_pos_assem2_result_compressed.bed "$tr_file" "$files_dir"/lo_pos_assem1_0_result_compressed.bed "$files_dir"/lo_pos_assem2_0_result_compressed.bed
-#optional arguments: 
-# -n/--not_hg38: if reference is NOT hg38 (hg19).
-# -p/--passonly: if consider PASS calls only. 
-# -w/--wrong_len: if count wrong length calls as True.
-# -g/--gt_vali: conduct genotype validation.
-
-python chrx.py "$output_dir" "$centro_file" "$files_dir"/assem1_non_cov_regions.bed "$files_dir"/assem2_non_cov_regions.bed "$vcf_file" "$reference" "$asm_h1" "$asm_h2" "$files_dir"/lo_pos_assem1_result_compressed.bed "$files_dir"/lo_pos_assem2_result_compressed.bed "$tr_file"
-#optional arguments: 
 # -n/--not_hg38: if reference is NOT hg38 (hg19).
 # -p/--passonly: if consider PASS calls only. 
 # -s/--seq_resolved: if consider sequence resolved calls (INS). 

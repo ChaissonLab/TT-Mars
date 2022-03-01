@@ -32,14 +32,14 @@ Script to combine results and output:
 
 ## Optional arguments
 
-1. ttmars.py:
+1. ttmars.py:  
 `-n/--not_hg38`: if reference is NOT hg38 (hg19).  
 `-p/--passonly`: if consider PASS calls only.   
 `-s/--seq_resolved`: if consider sequence resolved calls (INS).  
 `-w/--wrong_len`: if count wrong length calls as True.  
 `-g/--gt_vali`: conduct genotype validation.  
 
-2. For combine.py:  
+2. combine.py:  
 `-v/--vcf_out`: output results as vcf files (tp (true positive), fp (false positive) and na), must be used together with `-f/--vcf_file`.  
 `-f VCF_FILE/--vcf_file VCF_FILE`: input vcf file, use as template.  
 `-g/--gt_vali`: conduct genotype validation.  
