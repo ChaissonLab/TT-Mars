@@ -26,8 +26,16 @@ parser.add_argument("liftover_file1",
                     help="liftover file hap1")
 parser.add_argument("liftover_file2",
                     help="liftover file hap2")
+
+#needed in interspersed dup validation
+parser.add_argument("liftover_file1_0",
+                    help="liftover file hap1 asm to ref")
+parser.add_argument("liftover_file2_0",
+                    help="liftover file hap2 asm to ref")
+
 parser.add_argument("tandem_file",
                     help="tandem repeats regions")
+
 # parser.add_argument("if_hg38_input",
 #                     help="if reference is hg38 or not")
 parser.add_argument("-n",
@@ -56,6 +64,9 @@ parser.add_argument("-g",
                     "--gt_vali",
                     help="conduct genotype validation",
                     action="store_true")
+
+
+
 args = parser.parse_args()
 
 import sys
@@ -67,6 +78,21 @@ import math
 import get_conf_int
 import validate
 import get_align_info
+
+import func
+
+import mappy
+import os
+sys.path.insert(0, '../')
+
+##########################################################
+##########################################################
+
+#add reg_dup.py code and test
+
+##########################################################
+##########################################################
+
 
 output_dir = args.output_dir + "/"
 # if_hg38_input = args.if_hg38_input
@@ -88,30 +114,8 @@ tandem_file = args.tandem_file
 # if_passonly_input = args.if_passonly_input
 # seq_resolved_input = args.seq_resolved_input
 # wrong_len_input = args.wrong_len_input
-
-# output_dir = sys.argv[1] + "/"
-# if_hg38_input = sys.argv[2]
-# centromere_file = sys.argv[3]
-# #assembly bam files
-# assem1_non_cov_regions_file = sys.argv[4]
-# assem2_non_cov_regions_file = sys.argv[5]
-# #avg_read_depth = sys.argv[6]
-# #read_bam_file = sys.argv[6]
-# vcf_file = sys.argv[6]
-# #ref fasta file
-# ref_file = sys.argv[7]
-# #assembly fasta files
-# query_file1 = sys.argv[8]
-# query_file2 = sys.argv[9]
-# liftover_file1 = sys.argv[10]
-# liftover_file2 = sys.argv[11]
-# tandem_file = sys.argv[12]
-# if_passonly_input = sys.argv[13]
-# seq_resolved_input = sys.argv[14]
-# wrong_len_input = sys.argv[15]
-
-# liftover_file1_0 = sys.argv[12]
-# liftover_file2_0 = sys.argv[13]
+liftover_file1_0 = args.liftover_file1_0
+liftover_file2_0 = args.liftover_file2_0
 
 ##########################################################
 ##########################################################
@@ -161,358 +165,67 @@ memory_min = 10
 #max length of allowed DUP
 dup_memory_limit = 50000
 dup_memory_min = 10
+#max length of allowed interspersed DUP
+reg_dup_upper_len = 10000000
 
 #valid types
 valid_types = ['DEL', 'INS', 'INV', 'DUP:TANDEM', 'DUP']
 
-#tandem repeats regions file
-with open(tandem_file) as f:
-    reader = csv.reader(f, delimiter="\t")
-    tandem_info = list(reader)
-f.close()  
+#CONST for interspersed DUP
+valid_ins_ratio  = 0.6
+valid_aligned_portion = 0.9
+ins_rela_len_lb = 0.7
+ins_rela_len_ub = 1.3
+non_ins_rela_len_ub = 0.4
 
-#get tandem start and end list
-tandem_start_list, tandem_end_list = get_align_info.get_chr_tandem_shart_end_list(tandem_info, if_hg38)
-
-##########################################################
-##########################################################
-
-#build lists for excluded SV positions
-
-#Output regions on ref where its not covered by at least one of the assembly
-# get_conf_int.get_non_cover_regions(output_dir, bam_file1, 1, chr_list)
-# get_conf_int.get_non_cover_regions(output_dir, bam_file2, 2, chr_list)
-
-#Get regions where read depth > 2 * avg_read_depth
-#get_conf_int.get_high_depth_calls_info(output_dir, read_bam_file, vcf_file, avg_read_depth)
-
-#Output sv positions
-get_conf_int.get_sv_positions(output_dir, vcf_file)
-
-#Output filtered calls in non-covered regions
-SV_positions_file = output_dir + "SV_positions.bed"
-# assem1_non_cov_regions_file = output_dir + "assem1_non_cov_regions.bed"
-# assem2_non_cov_regions_file = output_dir + "assem2_non_cov_regions.bed"
-get_conf_int.output_non_cov_call_info(output_dir, SV_positions_file, assem1_non_cov_regions_file, assem2_non_cov_regions_file)
-
-#get filtered sv info, using results from get_conf_int.py 
-exclude_assem1_non_cover, exclude_assem2_non_cover = validate.get_filtered_sv_pos(output_dir + "exclude_assem1_non_cover.bed", 
-                                                                                  output_dir + "exclude_assem2_non_cover.bed")
-
-#build centromere dictionary
-dict_centromere = validate.build_centro_dict(centromere_file)
-    
-
-
-#return False if not filtered
-#first_filter: type, PASS, chr_name
-def first_filter(sv, sv_type):
-    #type filter
-    if sv_type not in valid_types:
-        return True
-    #PASS filter
-    if if_pass_only:
-        if 'PASS' not in sv.filter.keys():
-            return True
-    chr_name = sv.chrom
-    #chr filter
-    if chr_name not in chr_list:
-        return True
-    return False
-
-#second_filter: centromere, non-cov
-def second_filter(sv):
-    index = sv.idx
-    ref_name = sv.ref_name
-    sv_pos = sv.sv_pos
-    sv_stop = sv.sv_stop
-
-    if if_hg38:
-        centro_start = int(dict_centromere[ref_name][0])
-        centro_end = int(dict_centromere[ref_name][1])
-    else:
-        centro_start = int(dict_centromere['chr'+ref_name][0])
-        centro_end = int(dict_centromere['chr'+ref_name][1])
-
-    #centromere
-    if (sv_pos > centro_start and sv_pos < centro_end) or (sv_stop > centro_start and sv_stop < centro_end):
-        sv.is_sec_fil = True
-        return True
-        
-    #non-cov
-    list_to_check = [str(ref_name), str(sv_pos), str(sv_stop)]
-    #if sv in high-depth regions or non-covered regions, skip
-    if validate.check_exclude(list_to_check, exclude_assem1_non_cover, exclude_assem2_non_cover):
-        sv.is_sec_fil = True
-        return True
-    
-#third_filter: size
-def third_filter(sv):
-    #size
-    if sv.sv_type not in ['DUP:TANDEM', 'DUP']:
-        if abs(sv.length) < memory_min or abs(sv.length) > memory_limit:
-            sv.is_third_fil = True
-            return True
-    else:
-        if abs(sv.length) < dup_memory_min or abs(sv.length) > dup_memory_limit:
-            sv.is_third_fil = True
-            return True
-    
-
-#get validation info
-def write_vali_info(sv_list):
-    g = open(output_dir + "ttmars_res.txt", "w")
-    for sv in sv_list:
-        #skip if not analyzed
-        if (not sv.analyzed_hap1) or (not sv.analyzed_hap2):
-            continue
-        
-        res = sv.get_vali_res()
-        
-        g.write(str(sv.ref_name) + "\t")
-        g.write(str(sv.sv_pos) + "\t")
-        g.write(str(sv.sv_stop) + "\t")
-        g.write(str(sv.sv_type) + "\t")
-        g.write(str(res[1]) + "\t")
-        g.write(str(res[2]) + "\t")
-        g.write(str(res[0]))
-        
-        if args.gt_vali:
-            g.write("\t" + str(res[3]))
-        
-        g.write("\n")
-    g.close()
-    
-#define class
-class struc_var:
-    def __init__(self, idx, ref_name, sv_type, sv_pos, sv_stop, length, gt):
-        self.idx = idx
-        self.ref_name = ref_name
-        self.sv_pos = sv_pos
-        self.sv_stop = sv_stop
-        self.sv_type = sv_type
-        self.length = length
-        self.gt = gt
-        #if the call is part of an aggregate SV
-        self.is_agg = False
-        #if second filtered out
-        self.is_sec_fil = False
-        self.is_third_fil = False
-        
-        self.query_name_hap1 = "NA"
-        self.query_name_hap2 = "NA"
-        
-        self.ref_start_best_hap1 = -1
-        self.ref_end_best_hap1 = -1
-        self.query_start_best_hap1 = -1
-        self.query_end_best_hap1 = -1
-        
-        self.ref_start_best_hap2 = -1
-        self.ref_end_best_hap2 = -1
-        self.query_start_best_hap2 = -1
-        self.query_end_best_hap2 = -1
-        
-        self.analyzed_hap1 = False
-        self.analyzed_hap2 = False
-        
-        self.len_query_hap1 = -1
-        self.len_ref_hap1 = -1
-        self.len_query_hap2 = -1
-        self.len_ref_hap2 = -1
-        
-        self.score_before_hap1 = -1
-        self.score_after_hap1 = -1
-        self.score_before_hap2 = -1
-        self.score_after_hap2 = -1
-        
-        self.neg_strand_hap1 = False
-        self.neg_strand_hap2 = False
-        
-        self.ins_seq = ""
-        self.if_seq_resolved = False
-        
-    def check_tp(self, rela_len, rela_score):
-        result = True
-        if self.sv_type in ['DEL', 'DUP', 'DUP:TANDEM']:
-            if rela_score >= 0 and rela_score <= 2.5:
-                if rela_len >= -0.05*rela_score + 0.8 and rela_len <= 0.05*rela_score + 1.2:
-                    result = True
-                else:
-                    result = False
-            elif rela_score > 2.5:
-                if rela_len >= 0.675 and rela_len <= 1.325:
-                    result = True
-                else:
-                    result = False
-            else:
-                result = False
-        elif self.sv_type == 'INS':
-            #not seq-resolved
-            #if len(self.ins_seq) == 0:
-            if not self.if_seq_resolved:
-                if rela_len < 0.675 or rela_len > 1.325:
-                    result = False
-            #seq-resolved
-            else:
-                if rela_score >= 0 and rela_score <= 2.5:
-                    if rela_len >= -0.05*rela_score + 0.8 and rela_len <= 0.05*rela_score + 1.2:
-                        result = True
-                    else:
-                        result = False
-                elif rela_score > 2.5:
-                    if rela_len >= 0.675 and rela_len <= 1.325:
-                        result = True
-                    else:
-                        result = False
-                else:
-                    result = False                
-                
-        elif self.sv_type == 'INV':
-            if rela_score <= 0:
-                result = False
-        return result
-    
-    #TP when wrong length flag presents -- looser rules for TP
-    def check_tp_wlen(self, rela_len, rela_score):
-        result = True
-        if self.sv_type in ['DEL', 'DUP', 'DUP:TANDEM']:
-            if rela_score >= 0 and rela_score <= 2.5:
-                if rela_len >= -0.05*rela_score + 0.6 and rela_len <= 0.05*rela_score + 1.4:
-                    result = True
-                else:
-                    result = False
-            elif rela_score > 2.5:
-                if rela_len >= 0.475 and rela_len <= 1.525:
-                    result = True
-                else:
-                    result = False
-            else:
-                result = False
-        elif self.sv_type == 'INS':
-            #not seq-resolved
-            #if len(self.ins_seq) == 0:
-            if not self.if_seq_resolved:
-                if rela_len < 0.475 or rela_len > 1.525:
-                    result = False
-            #seq-resolved
-            else:
-                if rela_score >= 0 and rela_score <= 2.5:
-                    if rela_len >= -0.05*rela_score + 0.6 and rela_len <= 0.05*rela_score + 1.4:
-                        result = True
-                    else:
-                        result = False
-                elif rela_score > 2.5:
-                    if rela_len >= 0.475 and rela_len <= 1.525:
-                        result = True
-                    else:
-                        result = False
-                else:
-                    result = False                
-                
-        elif self.sv_type == 'INV':
-            if rela_score <= 0:
-                result = False
-        return result
-        
-    def print_info(self):
-        print(self.idx, self.ref_name, self.sv_pos, self.sv_stop, self.sv_type, self.length, self.gt, self.is_agg, self.is_sec_fil, self.is_third_fil)
-        
-    def cal_rela_score(self, score_before, score_after):
-        if score_before > -1 and score_before < 0:
-            tmp_score_before = -1
-            tmp_score_after = score_after + (tmp_score_before - score_before)
-            return round((tmp_score_after - tmp_score_before) / abs(tmp_score_before), 2)
-        
-        elif score_before >= 0 and score_before < 1:
-            tmp_score_before = 1
-            tmp_score_after = score_after + (tmp_score_before - score_before)
-            return round((tmp_score_after - tmp_score_before) / abs(tmp_score_before), 2)
-        
-        else:
-            return round((score_after - score_before) / abs(score_before), 2)
-        
-    def cal_rela_len(self, query_len, ref_len):
-        return round((query_len - ref_len) / self.length, 2)
-        
-    def get_vali_res(self):
-        if (not self.analyzed_hap1) or (not self.analyzed_hap2):
-            return -1
-        
-        if self.analyzed_hap1 and self.analyzed_hap2:
-            rela_len_1 = self.cal_rela_len(self.len_query_hap1, self.len_ref_hap1)
-            rela_len_2 = self.cal_rela_len(self.len_query_hap2, self.len_ref_hap2)
-            
-            rela_score_1 = self.cal_rela_score(self.score_before_hap1, self.score_after_hap1)
-            rela_score_2 = self.cal_rela_score(self.score_before_hap2, self.score_after_hap2)
-            
-            if not wrong_len:
-                res_hap1 = self.check_tp(rela_len_1, rela_score_1)
-                res_hap2 = self.check_tp(rela_len_2, rela_score_2)
-            else:
-                res_hap1 = self.check_tp_wlen(rela_len_1, rela_score_1)
-                res_hap2 = self.check_tp_wlen(rela_len_2, rela_score_2)
-            
-            gt_validate = False
-            if args.gt_vali:
-                if res_hap1 and res_hap2:
-                    if self.gt == (1,1):
-                        gt_validate = True
-                elif res_hap1 or res_hap2:
-                    if self.gt == (1,0) or self.gt == (0,1):
-                        gt_validate = True
-                
-            if res_hap1 and res_hap2:
-                if abs(rela_len_1 - 1) <= abs(rela_len_2 - 1):
-                    return (res_hap1, rela_len_1, rela_score_1, gt_validate)
-                else:
-                    return (res_hap2, rela_len_2, rela_score_2, gt_validate)
-            elif res_hap1:
-                return (res_hap1, rela_len_1, rela_score_1, gt_validate)
-            elif res_hap2:
-                return (res_hap2, rela_len_2, rela_score_2, gt_validate)
-            else:
-                if abs(rela_len_1 - 1) <= abs(rela_len_2 - 1):
-                    return (res_hap1, rela_len_1, rela_score_1, gt_validate)
-                else:
-                    return (res_hap2, rela_len_2, rela_score_2, gt_validate)
-            
-class alignment:
-    def __init__(self, idx, agt_rec, hap, query_length):
-        self.idx = idx
-        self.ref_name = 'NA'
-        self.ref_start = -1
-        self.ref_end = -1
-        self.contig_name = agt_rec.reference_name
-        self.contig_start = agt_rec.reference_start
-        self.contig_end = agt_rec.reference_end
-        self.query_name = agt_rec.query_name
-        #This the index of the first base in seq that is not soft-clipped
-        self.query_start = agt_rec.query_alignment_start
-        self.query_end = agt_rec.query_alignment_end
-        #the index of the last base in seq that is not soft-clipped - the index of the first base in seq that is not soft-clipped
-        self.aligned_length = agt_rec.query_alignment_length
-        
-        #use query length from the fasta file instead!!!
-        self.query_length = query_length
-        self.hap = hap
-    
-    def cal_aligned_portion(self):
-        return self.aligned_length/self.query_length
-    
-    def cal_ins_portion(self):
-        return 1 - (self.ref_end - self.ref_start)/self.aligned_length
-    
-    def set_ref_info(self, ref_name, ref_start, ref_end):
-        self.ref_name = ref_name
-        self.ref_start = ref_start
-        self.ref_end = ref_end
-        
-    def print_info(self):
-        print(self.idx, self.ref_name, self.ref_start, self.ref_end, self.contig_name, self.contig_start, self.contig_end, self.query_name, self.query_start, self.query_end,\
-             self.aligned_length, self.query_length, self.hap)
 
 #main function
 def main():
+    ##################################################################################
+    ##################################################################################
+    #validate ordinary SVs
+    
+    #tandem repeats regions file
+    with open(tandem_file) as f:
+        reader = csv.reader(f, delimiter="\t")
+        tandem_info = list(reader)
+    f.close()  
+
+    #get tandem start and end list
+    tandem_start_list, tandem_end_list = get_align_info.get_chr_tandem_shart_end_list(tandem_info, if_hg38)
+    
+    #query asm files and ref fasta file
+    query_fasta_file1 = pysam.FastaFile(query_file1)
+    query_fasta_file2 = pysam.FastaFile(query_file2)
+    ref_fasta_file = pysam.FastaFile(ref_file)
+
+    ##########################################################
+    ##########################################################
+
+    #build lists for excluded SV positions
+
+    #Output regions on ref where its not covered by at least one of the assembly
+    # get_conf_int.get_non_cover_regions(output_dir, bam_file1, 1, chr_list)
+    # get_conf_int.get_non_cover_regions(output_dir, bam_file2, 2, chr_list)
+
+    #Get regions where read depth > 2 * avg_read_depth
+    #get_conf_int.get_high_depth_calls_info(output_dir, read_bam_file, vcf_file, avg_read_depth)
+
+    #Output sv positions
+    get_conf_int.get_sv_positions(output_dir, vcf_file)
+
+    #Output filtered calls in non-covered regions
+    SV_positions_file = output_dir + "SV_positions.bed"
+    # assem1_non_cov_regions_file = output_dir + "assem1_non_cov_regions.bed"
+    # assem2_non_cov_regions_file = output_dir + "assem2_non_cov_regions.bed"
+    get_conf_int.output_non_cov_call_info(output_dir, SV_positions_file, assem1_non_cov_regions_file, assem2_non_cov_regions_file)
+
+    #get filtered sv info, using results from get_conf_int.py 
+    exclude_assem1_non_cover, exclude_assem2_non_cover = validate.get_filtered_sv_pos(output_dir + "exclude_assem1_non_cover.bed", 
+                                                                                      output_dir + "exclude_assem2_non_cover.bed")
+
+    #build centromere dictionary
+    dict_centromere = validate.build_centro_dict(centromere_file)
 
     #get validation info files
     
@@ -532,7 +245,7 @@ def main():
             print("invalid sv type info")
             continue
 
-        if first_filter(rec, sv_type):
+        if func.first_filter(rec, sv_type, valid_types, if_pass_only, chr_list):
             continue
 
         #get sv length
@@ -572,7 +285,7 @@ def main():
     #         raise Exception("Wrong number of sample genotype(s)")
     #     gts = [s['GT'] for s in rec.samples.values()] 
         
-        sv_list.append(struc_var(count, rec.chrom, sv_type, rec.pos, rec.stop, sv_len, sv_gt))   
+        sv_list.append(func.struc_var(count, rec.chrom, sv_type, rec.pos, rec.stop, sv_len, sv_gt, wrong_len))   
         
         #add ins seq for seq-resolved insertion
         #no multi-allelic considered
@@ -585,8 +298,8 @@ def main():
     #third_filter: size
 
     for sv in sv_list:
-        second_filter(sv)
-        third_filter(sv)
+        func.second_filter(sv, if_hg38, dict_centromere, exclude_assem1_non_cover, exclude_assem2_non_cover)
+        func.third_filter(sv, memory_min, memory_limit, dup_memory_min, dup_memory_limit)
     
     get_align_info.get_vali_info(output_dir, vcf_file, query_file1, 1, ref_file, interval, 
               contig_name_list_1, contig_pos_list_1, contig_name_dict_1, memory_limit, if_hg38, chr_list,
@@ -597,7 +310,237 @@ def main():
               tandem_start_list, tandem_end_list, tandem_info, sv_list, seq_resolved)
     
     #get validation info
-    write_vali_info(sv_list)
+    func.write_vali_info(sv_list, output_dir)
+    
+    ##################################################################################
+    ##################################################################################
+    #on chrX, which is a special case
+    
+    chrx_sv_list = []
+    for sv in sv_list:
+        if sv.ref_name == 'X' or sv.ref_name == 'chrX':
+            chrx_sv_list.append(sv)
+    
+    if len(chrx_sv_list) > 0:
+        func.write_vali_info_chrx(chrx_sv_list, output_dir)
+    
+    ##################################################################################
+    ##################################################################################
+    #validate interspersed DUP
+    
+    #re-index sv
+    f = pysam.VariantFile(vcf_file,'r')
+    sv_list = []
+    for count, rec in enumerate(f.fetch()):
+        #get sv_type
+        try:
+            sv_type = rec.info['SVTYPE']
+        except:
+            print("invalid sv type info")
+            continue
 
+        if func.first_filter(rec, sv_type, valid_types, if_pass_only, chr_list):
+            continue
+
+        #get sv length
+        if sv_type == 'INV':
+            sv_len = abs(rec.stop - rec.pos + 1)
+        else:
+            try:
+                sv_len = rec.info['SVLEN'][0]
+            except:
+                try:
+                    sv_len = rec.info['SVLEN']
+                except:
+                    sv_len = abs(rec.stop - rec.pos + 1)
+                    #print("invalid sv length info")
+    #         try:
+    #             sv_len = rec.info['SVLEN'][0]
+    #         except:
+    #             sv_len = rec.info['SVLEN']
+        #handle del length > 0:
+        if sv_type == 'DEL':
+            sv_len = -abs(sv_len)
+            
+        if abs(sv_len) < memory_min:
+            continue
+
+        #get gt
+        #only taking the first sample genotype 
+        if args.gt_vali:
+            sv_gt = rec.samples[0]["GT"]
+            #bad genotype
+            if sv_gt not in [(1, 1), (1, 0), (0, 1)]:
+                sv_gt = None
+        else:
+            sv_gt = None
+        
+    #     if len(rec.samples.values()) != 1:
+    #         raise Exception("Wrong number of sample genotype(s)")
+    #     gts = [s['GT'] for s in rec.samples.values()] 
+        
+        sv_list.append(func.struc_var(count, rec.chrom, sv_type, rec.pos, rec.stop, sv_len, sv_gt, wrong_len))   
+        
+        #add ins seq for seq-resolved insertion
+        #no multi-allelic considered
+        if (sv_type == 'INS') and seq_resolved:
+            sv_list[len(sv_list)-1].ins_seq = rec.alts[0]
+            sv_list[len(sv_list)-1].if_seq_resolved = True
+        
+    f.close()
+    #index sv: second_filter: centromere, non-cov
+    #third_filter: size
+
+    for sv in sv_list:
+        func.second_filter(sv, if_hg38, dict_centromere, exclude_assem1_non_cover, exclude_assem2_non_cover)
+        func.third_filter(sv, memory_min, memory_limit, dup_memory_min, dup_memory_limit)
+
+        
+    ####################################
+    ####################################
+    #get duplicated seq
+    g = open(output_dir+"all_reg_dup.fasta", "w")
+    ref_name = ""
+    ref_rec = ""
+    for test_sv in sv_list:
+        if test_sv.is_sec_fil:
+            continue
+
+        if test_sv.length > reg_dup_upper_len:
+            continue
+
+        #test
+        if test_sv.sv_type != 'DUP':
+            continue
+
+        #test
+    #     if test_sv.idx % 100 == 0:
+    #         print(test_sv.idx)
+
+        if test_sv.ref_name != ref_name:
+            ref_name = test_sv.ref_name
+            ref_rec = ref_fasta_file.fetch(test_sv.ref_name)
+        ref_frag = ref_rec[test_sv.sv_pos:test_sv.sv_stop+1]
+        ref_frag = ref_frag.upper()
+
+        g.write('>' + str(test_sv.idx) + "\n")
+        g.write(str(ref_frag) + "\n")
+
+    g.close()
+    
+    
+    ####################################
+    ####################################
+    #index alignment
+
+    aligner_hap1 = mappy.Aligner(fn_idx_in=query_file1)
+    aligner_hap2 = mappy.Aligner(fn_idx_in=query_file2)
+
+    ####################################
+    ####################################
+
+    ref_name_list_1, ref_pos_list_1, contig_idx_len_1 = func.build_map_asm_to_ref_compress(query_fasta_file1, liftover_file1_0, interval, if_hg38)
+
+    #get asm to ref mapping
+    ref_name_list_2, ref_pos_list_2, contig_idx_len_2 = func.build_map_asm_to_ref_compress(query_fasta_file2, liftover_file2_0, interval, if_hg38)
+
+    ####################################
+    ####################################
+    alignment_list = []
+
+    dup_alm_fasta_file_name = output_dir+"all_reg_dup.fasta"
+    try:
+        dup_alm_fasta_file = pysam.FastaFile(dup_alm_fasta_file_name)
+    except:
+        print("failed open interspersed duplication sequences, may not exist")
+        g = open(output_dir + "ttmars_regdup_res.txt", "w")
+        g.close()
+
+    ctr = 0
+
+    for seq_name in dup_alm_fasta_file.references:
+        dup_seq = func.getSeqRec(dup_alm_fasta_file, seq_name)
+        #if not aligner: raise Exception("ERROR: failed to load/build index")
+        dup_aligner_hap1 = aligner_hap1.map(dup_seq, seq2=None, cs=False, MD=False)
+        dup_aligner_hap2 = aligner_hap2.map(dup_seq, seq2=None, cs=False, MD=False)
+
+        alignment_list.append([])
+        for agt in dup_aligner_hap1:
+            alignment_list[len(alignment_list)-1].append(func.mappy_alignment(ctr, agt, 1, seq_name, len(dup_seq)))
+            ctr += 1
+        for agt in dup_aligner_hap2:
+            alignment_list[len(alignment_list)-1].append(func.mappy_alignment(ctr, agt, 2, seq_name, len(dup_seq)))
+            ctr += 1
+
+            
+    ###################################
+    ###################################
+    for agt_list in alignment_list:
+        if len(agt_list) < 2:
+            continue
+
+        for agt in agt_list:
+
+            ref_name, start, end = func.get_ref_info(agt,
+                                                contig_idx_len_1,
+                                                ref_name_list_1, 
+                                                ref_pos_list_1, 
+                                                contig_idx_len_2, 
+                                                ref_name_list_2,
+                                                ref_pos_list_2,
+                                                interval)
+
+        #     if check_ol([first_start_ref_name, first_start, first_end], [second_start_ref_name, second_start, second_end]):
+        #         continue
+            agt.set_ref_info(ref_name, start, end)
+
+            ref_name, int_start, int_end = func.get_ref_int_info(agt,
+                                                                contig_idx_len_1,
+                                                                ref_name_list_1, 
+                                                                ref_pos_list_1, 
+                                                                contig_idx_len_2, 
+                                                                ref_name_list_2,
+                                                                ref_pos_list_2,
+                                                                interval)
+
+            agt.set_ref_int_info(int_start, int_end)
+
+    #         agt.print_info()
+
+            if agt.cal_aligned_portion() < valid_aligned_portion:
+                continue
+
+            if int_start == -1 or int_end == -1:
+                sv_idx = int(agt.query_name)
+
+                sv_list_idx = func.get_sv_list_idx(sv_list, sv_idx)
+
+                sv_list[sv_list_idx].analyzed_hap1 = False
+                sv_list[sv_list_idx].analyzed_hap2 = False
+                break
+
+            if int_start != -1 and int_end != -1:
+                sv_idx = int(agt.query_name)
+
+                sv_list_idx = func.get_sv_list_idx(sv_list, sv_idx)
+
+                hap = agt.hap
+                sv_list[sv_list_idx].analyzed_hap1 = True
+                sv_list[sv_list_idx].analyzed_hap2 = True
+
+                if agt.cal_ins_rela_len() > ins_rela_len_lb and agt.cal_ins_rela_len() < ins_rela_len_ub:
+    #                 print(sv_list_idx)
+                    func.fake_tp_sv(sv_list[sv_list_idx], hap)
+                elif agt.cal_ins_rela_len() < non_ins_rela_len_ub:
+                    sv_list[sv_list_idx].valid_non_ins = True   
+    #             if agt.cal_ins_portion() > valid_ins_ratio:
+    #                 fake_tp_sv(sv_list[sv_idx], hap)
+    #                 print(sv_idx)
+
+    #################################
+    #################################
+    func.write_vali_info_reg_dup(sv_list, output_dir)
+    
+    
 if __name__ == "__main__":
     main()

@@ -68,9 +68,6 @@ import get_conf_int
 import validate
 import get_align_info
 
-##########################################################
-##########################################################
-#input
 output_dir = args.output_dir + "/"
 # if_hg38_input = args.if_hg38_input
 centromere_file = args.centromere_file
@@ -88,6 +85,33 @@ query_file2 = args.query_file2
 liftover_file1 = args.liftover_file1
 liftover_file2 = args.liftover_file2
 tandem_file = args.tandem_file
+# if_passonly_input = args.if_passonly_input
+# seq_resolved_input = args.seq_resolved_input
+# wrong_len_input = args.wrong_len_input
+
+# output_dir = sys.argv[1] + "/"
+# if_hg38_input = sys.argv[2]
+# centromere_file = sys.argv[3]
+# #assembly bam files
+# assem1_non_cov_regions_file = sys.argv[4]
+# assem2_non_cov_regions_file = sys.argv[5]
+# #avg_read_depth = sys.argv[6]
+# #read_bam_file = sys.argv[6]
+# vcf_file = sys.argv[6]
+# #ref fasta file
+# ref_file = sys.argv[7]
+# #assembly fasta files
+# query_file1 = sys.argv[8]
+# query_file2 = sys.argv[9]
+# liftover_file1 = sys.argv[10]
+# liftover_file2 = sys.argv[11]
+# tandem_file = sys.argv[12]
+# if_passonly_input = sys.argv[13]
+# seq_resolved_input = sys.argv[14]
+# wrong_len_input = sys.argv[15]
+
+# liftover_file1_0 = sys.argv[12]
+# liftover_file2_0 = sys.argv[13]
 
 ##########################################################
 ##########################################################
@@ -113,9 +137,17 @@ wrong_len = args.wrong_len
 #chr names
 chr_list = []
 if if_hg38:
-    chr_list = ["chrX"]
+    chr_list = ["chr1", "chr2", "chr3", "chr4", "chr5",
+                "chr6", "chr7", "chr8", "chr9", "chr10",
+                "chr11", "chr12", "chr13", "chr14", "chr15",
+                "chr16", "chr17", "chr18", "chr19", "chr20",
+                "chr21", "chr22", "chrX"]
 else:
-    chr_list = ["X"]
+    chr_list = ["1", "2", "3", "4", "5",
+                "6", "7", "8", "9", "10",
+                "11", "12", "13", "14", "15",
+                "16", "17", "18", "19", "20",
+                "21", "22", "X"]
 #approximate length of chromosomes
 chr_len = [250000000, 244000000, 199000000, 192000000, 182000000, 
             172000000, 160000000, 147000000, 142000000, 136000000, 
@@ -209,8 +241,8 @@ def second_filter(sv):
         
     #non-cov
     list_to_check = [str(ref_name), str(sv_pos), str(sv_stop)]
-    #if sv in non-covered regions, skip
-    if validate.check_exclude_chrx(list_to_check, exclude_assem1_non_cover, exclude_assem2_non_cover):
+    #if sv in high-depth regions or non-covered regions, skip
+    if validate.check_exclude(list_to_check, exclude_assem1_non_cover, exclude_assem2_non_cover):
         sv.is_sec_fil = True
         return True
     
@@ -229,10 +261,10 @@ def third_filter(sv):
 
 #get validation info
 def write_vali_info(sv_list):
-    g = open(output_dir + "ttmars_chrx_res.txt", "w")
+    g = open(output_dir + "ttmars_res.txt", "w")
     for sv in sv_list:
         #skip if not analyzed
-        if (not sv.analyzed_hap1) and (not sv.analyzed_hap2):
+        if (not sv.analyzed_hap1) or (not sv.analyzed_hap2):
             continue
         
         res = sv.get_vali_res()
@@ -244,7 +276,7 @@ def write_vali_info(sv_list):
         g.write(str(res[1]) + "\t")
         g.write(str(res[2]) + "\t")
         g.write(str(res[0]))
-                
+        
         if args.gt_vali:
             g.write("\t" + str(res[3]))
         
@@ -380,7 +412,7 @@ class struc_var:
         elif self.sv_type == 'INV':
             if rela_score <= 0:
                 result = False
-        return result    
+        return result
         
     def print_info(self):
         print(self.idx, self.ref_name, self.sv_pos, self.sv_stop, self.sv_type, self.length, self.gt, self.is_agg, self.is_sec_fil, self.is_third_fil)
@@ -403,10 +435,10 @@ class struc_var:
         return round((query_len - ref_len) / self.length, 2)
         
     def get_vali_res(self):
-        if (not self.analyzed_hap1) and (not self.analyzed_hap2):
+        if (not self.analyzed_hap1) or (not self.analyzed_hap2):
             return -1
         
-        elif self.analyzed_hap1 and self.analyzed_hap2:
+        if self.analyzed_hap1 and self.analyzed_hap2:
             rela_len_1 = self.cal_rela_len(self.len_query_hap1, self.len_ref_hap1)
             rela_len_2 = self.cal_rela_len(self.len_query_hap2, self.len_ref_hap2)
             
@@ -443,36 +475,7 @@ class struc_var:
                     return (res_hap1, rela_len_1, rela_score_1, gt_validate)
                 else:
                     return (res_hap2, rela_len_2, rela_score_2, gt_validate)
-                
-        elif self.analyzed_hap1:
-            rela_len_1 = self.cal_rela_len(self.len_query_hap1, self.len_ref_hap1)
             
-            rela_score_1 = self.cal_rela_score(self.score_before_hap1, self.score_after_hap1)
-            
-            res_hap1 = self.check_tp(rela_len_1, rela_score_1)
-            
-            gt_validate = False
-            if args.gt_vali:
-                if res_hap1:
-                    if self.gt == (1,0) or self.gt == (0,1):
-                        gt_validate = True
-            
-            return (res_hap1, rela_len_1, rela_score_1, gt_validate)
-        elif self.analyzed_hap2:
-            rela_len_2 = self.cal_rela_len(self.len_query_hap2, self.len_ref_hap2)
-            
-            rela_score_2 = self.cal_rela_score(self.score_before_hap2, self.score_after_hap2)
-            
-            res_hap2 = self.check_tp(rela_len_2, rela_score_2)   
-            
-            gt_validate = False
-            if args.gt_vali:
-                if res_hap2:
-                    if self.gt == (1,0) or self.gt == (0,1):
-                        gt_validate = True
-            
-            return (res_hap2, rela_len_2, rela_score_2, gt_validate)
-        
 class alignment:
     def __init__(self, idx, agt_rec, hap, query_length):
         self.idx = idx
@@ -565,6 +568,10 @@ def main():
         else:
             sv_gt = None
         
+    #     if len(rec.samples.values()) != 1:
+    #         raise Exception("Wrong number of sample genotype(s)")
+    #     gts = [s['GT'] for s in rec.samples.values()] 
+        
         sv_list.append(struc_var(count, rec.chrom, sv_type, rec.pos, rec.stop, sv_len, sv_gt))   
         
         #add ins seq for seq-resolved insertion
@@ -594,4 +601,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    

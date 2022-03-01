@@ -75,7 +75,6 @@ import numpy as np
 import random
 import mappy
 import os
-import random
 sys.path.insert(0, '../')
 import get_align_info
 import get_conf_int
@@ -383,7 +382,7 @@ class struc_var:
     def cal_rela_len(self, query_len, ref_len):
         return round((query_len - ref_len) / self.length, 2)
         
-    def get_vali_res(self):
+    def get_vali_res_reg_dup(self):
         if self.sv_type == 'DUP':
             #if there's no valid non ins for a DUP call, won't validate it
             if not self.valid_non_ins:
@@ -430,6 +429,8 @@ class struc_var:
                     return (res_hap1, rela_len_1, rela_score_1, gt_validate)
                 else:
                     return (res_hap2, rela_len_2, rela_score_2, gt_validate)
+                
+                
             
         
 class alignment:
@@ -1012,7 +1013,6 @@ valid_ins_ratio  = 0.6
 valid_aligned_portion = 0.9
 ins_rela_len_lb = 0.7
 ins_rela_len_ub = 1.3
-
 non_ins_rela_len_ub = 0.4
 
 ##################################################################################
