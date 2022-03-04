@@ -851,7 +851,7 @@ def write_vali_info_chrx(sv_list, output_dir):
         g.write(str(res[2]) + "\t")
         g.write(str(res[0]))
                 
-        if args.gt_vali:
+        if sv.gt:
             g.write("\t" + str(res[3]))
         
         g.write("\n")
