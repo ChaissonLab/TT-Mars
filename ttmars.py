@@ -315,11 +315,86 @@ def main():
     ##################################################################################
     ##################################################################################
     #on chrX, which is a special case
-    
+            
+    #index chrX SVs
+    f = pysam.VariantFile(vcf_file,'r')
     chrx_sv_list = []
-    for sv in sv_list:
-        if sv.ref_name == 'X' or sv.ref_name == 'chrX':
-            chrx_sv_list.append(sv)
+    for count, rec in enumerate(f.fetch()):
+        #get sv_type
+        try:
+            sv_type = rec.info['SVTYPE']
+        except:
+            print("invalid sv type info")
+            continue
+        
+        if not (rec.chrom == 'X' or rec.chrom == 'chrX'):
+            continue
+
+        if func.first_filter(rec, sv_type, valid_types, if_pass_only, chr_list):
+            continue
+
+        #get sv length
+        if sv_type == 'INV':
+            sv_len = abs(rec.stop - rec.pos + 1)
+        else:
+            try:
+                sv_len = rec.info['SVLEN'][0]
+            except:
+                try:
+                    sv_len = rec.info['SVLEN']
+                except:
+                    sv_len = abs(rec.stop - rec.pos + 1)
+                    #print("invalid sv length info")
+    #         try:
+    #             sv_len = rec.info['SVLEN'][0]
+    #         except:
+    #             sv_len = rec.info['SVLEN']
+        #handle del length > 0:
+        if sv_type == 'DEL':
+            sv_len = -abs(sv_len)
+            
+        if abs(sv_len) < memory_min:
+            continue
+
+        #get gt
+        #only taking the first sample genotype 
+        if args.gt_vali:
+            sv_gt = rec.samples[0]["GT"]
+            #bad genotype
+            if sv_gt not in [(1, 1), (1, 0), (0, 1)]:
+                sv_gt = None
+        else:
+            sv_gt = None
+        
+    #     if len(rec.samples.values()) != 1:
+    #         raise Exception("Wrong number of sample genotype(s)")
+    #     gts = [s['GT'] for s in rec.samples.values()] 
+        
+        chrx_sv_list.append(func.struc_var(count, rec.chrom, sv_type, rec.pos, rec.stop, sv_len, sv_gt, wrong_len))   
+        
+        #add ins seq for seq-resolved insertion
+        #no multi-allelic considered
+        if (sv_type == 'INS') and seq_resolved:
+            chrx_sv_list[len(chrx_sv_list)-1].ins_seq = rec.alts[0]
+            chrx_sv_list[len(chrx_sv_list)-1].if_seq_resolved = True
+        
+    f.close()
+    #index sv: second_filter: centromere, non-cov
+    #third_filter: size
+
+    for sv in chrx_sv_list:
+        func.second_filter_chrx(sv, if_hg38, dict_centromere, exclude_assem1_non_cover, exclude_assem2_non_cover)
+        func.third_filter(sv, memory_min, memory_limit, dup_memory_min, dup_memory_limit)
+    
+    get_align_info.get_vali_info(output_dir, vcf_file, query_file1, 1, ref_file, interval, 
+              contig_name_list_1, contig_pos_list_1, contig_name_dict_1, memory_limit, if_hg38, chr_list,
+              tandem_start_list, tandem_end_list, tandem_info, chrx_sv_list, seq_resolved)
+    
+    get_align_info.get_vali_info(output_dir, vcf_file, query_file2, 2, ref_file, interval, 
+              contig_name_list_2, contig_pos_list_2, contig_name_dict_2, memory_limit, if_hg38, chr_list,
+              tandem_start_list, tandem_end_list, tandem_info, chrx_sv_list, seq_resolved)            
+            
+    
     
     if len(chrx_sv_list) > 0:
         func.write_vali_info_chrx(chrx_sv_list, output_dir)

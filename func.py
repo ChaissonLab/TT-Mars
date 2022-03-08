@@ -313,7 +313,7 @@ class struc_var:
             res_hap1 = self.check_tp(rela_len_1, rela_score_1)
             
             gt_validate = False
-            if args.gt_vali:
+            if self.gt:
                 if res_hap1:
                     if self.gt == (1,0) or self.gt == (0,1):
                         gt_validate = True
@@ -327,7 +327,7 @@ class struc_var:
             res_hap2 = self.check_tp(rela_len_2, rela_score_2)   
             
             gt_validate = False
-            if args.gt_vali:
+            if self.gt:
                 if res_hap2:
                     if self.gt == (1,0) or self.gt == (0,1):
                         gt_validate = True
@@ -412,6 +412,32 @@ def second_filter(sv, if_hg38, dict_centromere, exclude_assem1_non_cover, exclud
     list_to_check = [str(ref_name), str(sv_pos), str(sv_stop)]
     #if sv in high-depth regions or non-covered regions, skip
     if validate.check_exclude(list_to_check, exclude_assem1_non_cover, exclude_assem2_non_cover):
+        sv.is_sec_fil = True
+        return True
+    
+#second_filter for chrX: centromere, non-cov
+def second_filter_chrx(sv, if_hg38, dict_centromere, exclude_assem1_non_cover, exclude_assem2_non_cover):
+    index = sv.idx
+    ref_name = sv.ref_name
+    sv_pos = sv.sv_pos
+    sv_stop = sv.sv_stop
+
+    if if_hg38:
+        centro_start = int(dict_centromere[ref_name][0])
+        centro_end = int(dict_centromere[ref_name][1])
+    else:
+        centro_start = int(dict_centromere['chr'+ref_name][0])
+        centro_end = int(dict_centromere['chr'+ref_name][1])
+
+    #centromere
+    if (sv_pos > centro_start and sv_pos < centro_end) or (sv_stop > centro_start and sv_stop < centro_end):
+        sv.is_sec_fil = True
+        return True
+        
+    #non-cov
+    list_to_check = [str(ref_name), str(sv_pos), str(sv_stop)]
+    #if sv in high-depth regions or non-covered regions, skip
+    if validate.check_exclude_chrx(list_to_check, exclude_assem1_non_cover, exclude_assem2_non_cover):
         sv.is_sec_fil = True
         return True
     
