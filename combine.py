@@ -68,11 +68,16 @@ with open(other_sv_res_file) as f:
     other_sv_res = list(reader)
 f.close()
 
-with open(regdup_res_file) as f:
-    reader = csv.reader(f, delimiter="\t")
-    regdup_res = list(reader)
-f.close()
-
+if_dup = True
+try:
+    with open(regdup_res_file) as f:
+        reader = csv.reader(f, delimiter="\t")
+        regdup_res = list(reader)
+    f.close()
+except:
+    if_dup = False
+    
+    
 #if output fn
 if output_fn:
     #input truth set
@@ -101,26 +106,27 @@ for rec in other_sv_res:
     else:
         sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)] = [rec[4], rec[5], rec[6], rec[7]]
 #interspersed DUP
-for rec in regdup_res:
-    ref_name = rec[0]
-    sv_pos = int(rec[1])
-    sv_end = int(rec[2])
-    sv_type = rec[3]
-    if (ref_name, int(sv_pos), int(sv_end), sv_type) in sv_dict:
-        if not args.gt_vali:
-            if rec[6] == 'True' and sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)][2] == 'False':
-                sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)] = [rec[4], rec[5], rec[6]]
-        else:
-            if rec[6] == 'True' and sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)][2] == 'False':
-                sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)] = [rec[4], rec[5], rec[6], rec[7]]
-            elif rec[6] == 'True' and sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)][2] == 'True':
-                if rec[7] == 'True' and sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)][3] == 'False':
+if if_dup:
+    for rec in regdup_res:
+        ref_name = rec[0]
+        sv_pos = int(rec[1])
+        sv_end = int(rec[2])
+        sv_type = rec[3]
+        if (ref_name, int(sv_pos), int(sv_end), sv_type) in sv_dict:
+            if not args.gt_vali:
+                if rec[6] == 'True' and sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)][2] == 'False':
+                    sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)] = [rec[4], rec[5], rec[6]]
+            else:
+                if rec[6] == 'True' and sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)][2] == 'False':
                     sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)] = [rec[4], rec[5], rec[6], rec[7]]
-    else:
-        if not args.gt_vali:
-            sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)] = [rec[4], rec[5], rec[6]]
+                elif rec[6] == 'True' and sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)][2] == 'True':
+                    if rec[7] == 'True' and sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)][3] == 'False':
+                        sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)] = [rec[4], rec[5], rec[6], rec[7]]
         else:
-            sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)] = [rec[4], rec[5], rec[6], rec[7]]
+            if not args.gt_vali:
+                sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)] = [rec[4], rec[5], rec[6]]
+            else:
+                sv_dict[(ref_name, int(sv_pos), int(sv_end), sv_type)] = [rec[4], rec[5], rec[6], rec[7]]
         
 if if_male:
     chrx_res_file = output_dir+"ttmars_chrx_res.txt"
@@ -210,7 +216,7 @@ if if_vcf:
     vcf_in.close()    
     
 #remove files
-# import os
+import os
 # for name in ['assem1_non_cov_regions.bed', 'assem2_non_cov_regions.bed',
 #              'exclude_assem1_non_cover.bed', 'exclude_assem2_non_cover.bed',
 #              'SV_positions.bed', 'ttmars_chrx_res.txt', 'ttmars_regdup_res.txt',

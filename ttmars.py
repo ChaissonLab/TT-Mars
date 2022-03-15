@@ -138,6 +138,7 @@ seq_resolved = args.seq_resolved
 wrong_len = args.wrong_len
 # if wrong_len_input == "True":
 #     wrong_len = True
+if_gt = args.gt_vali
 #chr names
 chr_list = []
 if if_hg38:
@@ -310,7 +311,7 @@ def main():
               tandem_start_list, tandem_end_list, tandem_info, sv_list, seq_resolved)
     
     #get validation info
-    func.write_vali_info(sv_list, output_dir)
+    func.write_vali_info(sv_list, output_dir, if_gt)
     
     ##################################################################################
     ##################################################################################
@@ -397,7 +398,7 @@ def main():
     
     
     if len(chrx_sv_list) > 0:
-        func.write_vali_info_chrx(chrx_sv_list, output_dir)
+        func.write_vali_info_chrx(chrx_sv_list, output_dir, if_gt)
     
     ##################################################################################
     ##################################################################################
@@ -524,97 +525,100 @@ def main():
     alignment_list = []
 
     dup_alm_fasta_file_name = output_dir+"all_reg_dup.fasta"
+    if_dup = True
     try:
         dup_alm_fasta_file = pysam.FastaFile(dup_alm_fasta_file_name)
     except:
         print("failed open interspersed duplication sequences, may not exist")
         g = open(output_dir + "ttmars_regdup_res.txt", "w")
         g.close()
+        if_dup = False
 
-    ctr = 0
+    if if_dup:
+        ctr = 0
 
-    for seq_name in dup_alm_fasta_file.references:
-        dup_seq = func.getSeqRec(dup_alm_fasta_file, seq_name)
-        #if not aligner: raise Exception("ERROR: failed to load/build index")
-        dup_aligner_hap1 = aligner_hap1.map(dup_seq, seq2=None, cs=False, MD=False)
-        dup_aligner_hap2 = aligner_hap2.map(dup_seq, seq2=None, cs=False, MD=False)
+        for seq_name in dup_alm_fasta_file.references:
+            dup_seq = func.getSeqRec(dup_alm_fasta_file, seq_name)
+            #if not aligner: raise Exception("ERROR: failed to load/build index")
+            dup_aligner_hap1 = aligner_hap1.map(dup_seq, seq2=None, cs=False, MD=False)
+            dup_aligner_hap2 = aligner_hap2.map(dup_seq, seq2=None, cs=False, MD=False)
 
-        alignment_list.append([])
-        for agt in dup_aligner_hap1:
-            alignment_list[len(alignment_list)-1].append(func.mappy_alignment(ctr, agt, 1, seq_name, len(dup_seq)))
-            ctr += 1
-        for agt in dup_aligner_hap2:
-            alignment_list[len(alignment_list)-1].append(func.mappy_alignment(ctr, agt, 2, seq_name, len(dup_seq)))
-            ctr += 1
+            alignment_list.append([])
+            for agt in dup_aligner_hap1:
+                alignment_list[len(alignment_list)-1].append(func.mappy_alignment(ctr, agt, 1, seq_name, len(dup_seq)))
+                ctr += 1
+            for agt in dup_aligner_hap2:
+                alignment_list[len(alignment_list)-1].append(func.mappy_alignment(ctr, agt, 2, seq_name, len(dup_seq)))
+                ctr += 1
 
-            
-    ###################################
-    ###################################
-    for agt_list in alignment_list:
-        if len(agt_list) < 2:
-            continue
 
-        for agt in agt_list:
-
-            ref_name, start, end = func.get_ref_info(agt,
-                                                contig_idx_len_1,
-                                                ref_name_list_1, 
-                                                ref_pos_list_1, 
-                                                contig_idx_len_2, 
-                                                ref_name_list_2,
-                                                ref_pos_list_2,
-                                                interval)
-
-        #     if check_ol([first_start_ref_name, first_start, first_end], [second_start_ref_name, second_start, second_end]):
-        #         continue
-            agt.set_ref_info(ref_name, start, end)
-
-            ref_name, int_start, int_end = func.get_ref_int_info(agt,
-                                                                contig_idx_len_1,
-                                                                ref_name_list_1, 
-                                                                ref_pos_list_1, 
-                                                                contig_idx_len_2, 
-                                                                ref_name_list_2,
-                                                                ref_pos_list_2,
-                                                                interval)
-
-            agt.set_ref_int_info(int_start, int_end)
-
-    #         agt.print_info()
-
-            if agt.cal_aligned_portion() < valid_aligned_portion:
+        ###################################
+        ###################################
+        for agt_list in alignment_list:
+            if len(agt_list) < 2:
                 continue
 
-            if int_start == -1 or int_end == -1:
-                sv_idx = int(agt.query_name)
+            for agt in agt_list:
 
-                sv_list_idx = func.get_sv_list_idx(sv_list, sv_idx)
+                ref_name, start, end = func.get_ref_info(agt,
+                                                    contig_idx_len_1,
+                                                    ref_name_list_1, 
+                                                    ref_pos_list_1, 
+                                                    contig_idx_len_2, 
+                                                    ref_name_list_2,
+                                                    ref_pos_list_2,
+                                                    interval)
 
-                sv_list[sv_list_idx].analyzed_hap1 = False
-                sv_list[sv_list_idx].analyzed_hap2 = False
-                break
+            #     if check_ol([first_start_ref_name, first_start, first_end], [second_start_ref_name, second_start, second_end]):
+            #         continue
+                agt.set_ref_info(ref_name, start, end)
 
-            if int_start != -1 and int_end != -1:
-                sv_idx = int(agt.query_name)
+                ref_name, int_start, int_end = func.get_ref_int_info(agt,
+                                                                    contig_idx_len_1,
+                                                                    ref_name_list_1, 
+                                                                    ref_pos_list_1, 
+                                                                    contig_idx_len_2, 
+                                                                    ref_name_list_2,
+                                                                    ref_pos_list_2,
+                                                                    interval)
 
-                sv_list_idx = func.get_sv_list_idx(sv_list, sv_idx)
+                agt.set_ref_int_info(int_start, int_end)
 
-                hap = agt.hap
-                sv_list[sv_list_idx].analyzed_hap1 = True
-                sv_list[sv_list_idx].analyzed_hap2 = True
+        #         agt.print_info()
 
-                if agt.cal_ins_rela_len() > ins_rela_len_lb and agt.cal_ins_rela_len() < ins_rela_len_ub:
-    #                 print(sv_list_idx)
-                    func.fake_tp_sv(sv_list[sv_list_idx], hap)
-                elif agt.cal_ins_rela_len() < non_ins_rela_len_ub:
-                    sv_list[sv_list_idx].valid_non_ins = True   
-    #             if agt.cal_ins_portion() > valid_ins_ratio:
-    #                 fake_tp_sv(sv_list[sv_idx], hap)
-    #                 print(sv_idx)
+                if agt.cal_aligned_portion() < valid_aligned_portion:
+                    continue
 
-    #################################
-    #################################
-    func.write_vali_info_reg_dup(sv_list, output_dir)
+                if int_start == -1 or int_end == -1:
+                    sv_idx = int(agt.query_name)
+
+                    sv_list_idx = func.get_sv_list_idx(sv_list, sv_idx)
+
+                    sv_list[sv_list_idx].analyzed_hap1 = False
+                    sv_list[sv_list_idx].analyzed_hap2 = False
+                    break
+
+                if int_start != -1 and int_end != -1:
+                    sv_idx = int(agt.query_name)
+
+                    sv_list_idx = func.get_sv_list_idx(sv_list, sv_idx)
+
+                    hap = agt.hap
+                    sv_list[sv_list_idx].analyzed_hap1 = True
+                    sv_list[sv_list_idx].analyzed_hap2 = True
+
+                    if agt.cal_ins_rela_len() > ins_rela_len_lb and agt.cal_ins_rela_len() < ins_rela_len_ub:
+        #                 print(sv_list_idx)
+                        func.fake_tp_sv(sv_list[sv_list_idx], hap)
+                    elif agt.cal_ins_rela_len() < non_ins_rela_len_ub:
+                        sv_list[sv_list_idx].valid_non_ins = True   
+        #             if agt.cal_ins_portion() > valid_ins_ratio:
+        #                 fake_tp_sv(sv_list[sv_idx], hap)
+        #                 print(sv_idx)
+
+        #################################
+        #################################
+        func.write_vali_info_reg_dup(sv_list, output_dir, if_gt)
     
     
 if __name__ == "__main__":

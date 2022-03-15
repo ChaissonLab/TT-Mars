@@ -173,7 +173,7 @@ class struc_var:
     def cal_rela_len(self, query_len, ref_len):
         return round((query_len - ref_len) / self.length, 2)
         
-    def get_vali_res(self):
+    def get_vali_res(self, if_gt):
         if (not self.analyzed_hap1) or (not self.analyzed_hap2):
             return -1
         
@@ -192,7 +192,7 @@ class struc_var:
                 res_hap2 = self.check_tp_wlen(rela_len_2, rela_score_2)
             
             gt_validate = False
-            if self.gt:
+            if if_gt:
                 if res_hap1 and res_hap2:
                     if self.gt == (1,1):
                         gt_validate = True
@@ -215,7 +215,7 @@ class struc_var:
                 else:
                     return (res_hap2, rela_len_2, rela_score_2, gt_validate)
                 
-    def get_vali_res_reg_dup(self):
+    def get_vali_res_reg_dup(self, if_gt):
         if self.sv_type == 'DUP':
             #if there's no valid non ins for a DUP call, won't validate it
             if not self.valid_non_ins:
@@ -240,7 +240,7 @@ class struc_var:
                 res_hap2 = self.check_tp_wlen(rela_len_2, rela_score_2)
             
             gt_validate = False
-            if self.gt:
+            if if_gt:
                 if res_hap1 and res_hap2:
                     if self.gt == (1,1):
                         gt_validate = True
@@ -263,7 +263,7 @@ class struc_var:
                 else:
                     return (res_hap2, rela_len_2, rela_score_2, gt_validate)  
 
-    def get_vali_res_chrx(self):
+    def get_vali_res_chrx(self, if_gt):
         if (not self.analyzed_hap1) and (not self.analyzed_hap2):
             return -1
         
@@ -282,7 +282,7 @@ class struc_var:
                 res_hap2 = self.check_tp_wlen(rela_len_2, rela_score_2)
             
             gt_validate = False
-            if self.gt:
+            if if_gt:
                 if res_hap1 and res_hap2:
                     if self.gt == (1,1):
                         gt_validate = True
@@ -313,7 +313,7 @@ class struc_var:
             res_hap1 = self.check_tp(rela_len_1, rela_score_1)
             
             gt_validate = False
-            if self.gt:
+            if if_gt:
                 if res_hap1:
                     if self.gt == (1,0) or self.gt == (0,1):
                         gt_validate = True
@@ -327,7 +327,7 @@ class struc_var:
             res_hap2 = self.check_tp(rela_len_2, rela_score_2)   
             
             gt_validate = False
-            if self.gt:
+            if if_gt:
                 if res_hap2:
                     if self.gt == (1,0) or self.gt == (0,1):
                         gt_validate = True
@@ -455,14 +455,14 @@ def third_filter(sv, memory_min, memory_limit, dup_memory_min, dup_memory_limit)
     
 
 #get validation info
-def write_vali_info(sv_list, output_dir):
+def write_vali_info(sv_list, output_dir, if_gt):
     g = open(output_dir + "ttmars_res.txt", "w")
     for sv in sv_list:
         #skip if not analyzed
         if (not sv.analyzed_hap1) or (not sv.analyzed_hap2):
             continue
         
-        res = sv.get_vali_res()
+        res = sv.get_vali_res(if_gt)
         
         g.write(str(sv.ref_name) + "\t")
         g.write(str(sv.sv_pos) + "\t")
@@ -472,7 +472,7 @@ def write_vali_info(sv_list, output_dir):
         g.write(str(res[2]) + "\t")
         g.write(str(res[0]))
         
-        if sv.gt:
+        if if_gt:
             g.write("\t" + str(res[3]))
         
         g.write("\n")
@@ -837,10 +837,10 @@ def get_sv_list_idx(sv_list, sv_idx):
             break
     return sv_list_idx
 
-def write_vali_info_reg_dup(sv_list, output_dir):
+def write_vali_info_reg_dup(sv_list, output_dir, if_gt):
     g = open(output_dir + "ttmars_regdup_res.txt", "w")
     for sv in sv_list:
-        res = sv.get_vali_res_reg_dup()
+        res = sv.get_vali_res_reg_dup(if_gt)
         
         #skip if not analyzed
         if (not sv.analyzed_hap1) or (not sv.analyzed_hap2):
@@ -854,20 +854,20 @@ def write_vali_info_reg_dup(sv_list, output_dir):
         g.write(str(res[2]) + "\t")
         g.write(str(res[0]))
         
-        if sv.gt:
+        if if_gt:
             g.write("\t" + str(res[3]))
             
         g.write("\n")
     g.close()
     
-def write_vali_info_chrx(sv_list, output_dir):
+def write_vali_info_chrx(sv_list, output_dir, if_gt):
     g = open(output_dir + "ttmars_chrx_res.txt", "w")
     for sv in sv_list:
         #skip if not analyzed
         if (not sv.analyzed_hap1) and (not sv.analyzed_hap2):
             continue
         
-        res = sv.get_vali_res_chrx()
+        res = sv.get_vali_res_chrx(if_gt)
         
         g.write(str(sv.ref_name) + "\t")
         g.write(str(sv.sv_pos) + "\t")
@@ -877,7 +877,7 @@ def write_vali_info_chrx(sv_list, output_dir):
         g.write(str(res[2]) + "\t")
         g.write(str(res[0]))
                 
-        if sv.gt:
+        if if_gt:
             g.write("\t" + str(res[3]))
         
         g.write("\n")
