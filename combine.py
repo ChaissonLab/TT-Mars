@@ -38,8 +38,8 @@ if bool(args.vcf_out) ^ bool(args.vcf_file):
 if bool(args.false_neg) ^ bool(args.truth_file):
     parser.error('-t/--truth_file must be used with -n/--false_neg')
     
-if bool(args.false_neg) ^ bool(args.vcf_file):
-    parser.error('-f/--vcf_file must be used with -n/--false_neg')
+if (bool(args.false_neg)) and (not bool(args.vcf_file)):
+    parser.error('-n/--false_neg must be used with -f/--vcf_file')
 
 output_dir = args.output_dir + "/"
 

@@ -394,8 +394,6 @@ def main():
     get_align_info.get_vali_info(output_dir, vcf_file, query_file2, 2, ref_file, interval, 
               contig_name_list_2, contig_pos_list_2, contig_name_dict_2, memory_limit, if_hg38, chr_list,
               tandem_start_list, tandem_end_list, tandem_info, chrx_sv_list, seq_resolved)            
-            
-    
     
     if len(chrx_sv_list) > 0:
         func.write_vali_info_chrx(chrx_sv_list, output_dir, if_gt)

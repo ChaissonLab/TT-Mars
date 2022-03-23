@@ -598,7 +598,7 @@ def align_before_after(output_dir, sv, query_seq, ref_seq_1, ref_seq_2):
         #aligner.score_only = True
         alignment_beforeSV = aligner.score(query_seq, ref_seq_1)
         alignment_afterSV = aligner.score(query_seq, ref_seq_2)
-    else:
+    else:        
         h = open(output_dir+"tmp_query.fasta", "w")
         h.write('>' + str(sv.idx) + "\n")
         h.write(query_seq + "\n")
