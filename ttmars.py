@@ -36,6 +36,19 @@ parser.add_argument("liftover_file2_0",
 parser.add_argument("tandem_file",
                     help="tandem repeats regions")
 
+##########################################################
+##########################################################
+parser.add_argument("region_len_m",
+                    type=int,
+                    help="region_len_m")
+
+parser.add_argument("no_X_chr",
+                    choices=[1, 2],
+                    help="male sample 1, female sample 2",
+                    type=int)
+##########################################################
+##########################################################
+
 # parser.add_argument("if_hg38_input",
 #                     help="if reference is hg38 or not")
 parser.add_argument("-n",
@@ -64,10 +77,49 @@ parser.add_argument("-g",
                     "--gt_vali",
                     help="conduct genotype validation",
                     action="store_true")
+parser.add_argument("-i",
+                    "--gt_info",
+                    help="index with GT info",
+                    action="store_true")
+parser.add_argument("-d",
+                    "--phased",
+                    help="take phased information",
+                    action="store_true")
 
-
+#for combining results
+parser.add_argument("-v",
+                    "--vcf_out",
+                    help="output results as vcf files, must be used together with -f/--vcf_file",
+                    action="store_true")
+parser.add_argument("-f",
+                    "--false_neg",
+                    help="output false negative, must be used together with -t/--truth_file and -f/--vcf_file",
+                    action="store_true")
+parser.add_argument("-t",
+                    "--truth_file",
+                    help="input truth vcf file, must be used together with -n/--false_neg")
 
 args = parser.parse_args()
+
+if bool(args.false_neg) ^ bool(args.truth_file):
+    parser.error('-t/--truth_file must be used with -f/--false_neg')
+
+#flags for combining
+if int(args.no_X_chr) == 1:
+    if_male = True
+else:
+    if_male = False
+    
+if args.vcf_out:
+    if_vcf = True
+else:
+    if_vcf = False
+    
+if args.false_neg:
+    output_fn = True
+    in_truth_file = args.truth_file
+else:
+    output_fn = False
 
 import sys
 import csv
@@ -75,11 +127,7 @@ import pysam
 import numpy as np 
 import math
 
-import get_conf_int
-import validate
-import get_align_info
-
-import func
+import heapq
 
 import mappy
 import os
@@ -87,8 +135,6 @@ sys.path.insert(0, '../')
 
 ##########################################################
 ##########################################################
-
-#add reg_dup.py code and test
 
 ##########################################################
 ##########################################################
@@ -123,21 +169,19 @@ liftover_file2_0 = args.liftover_file2_0
 
 #liftover interval
 interval = 20
+#if hg38/chm13 reference: chr
 if_hg38 = not args.not_hg38
-# if if_hg38_input == "True":
-#     if_hg38 = True
 #if pass_only
 if_pass_only = args.passonly
-# if if_passonly_input == "True":
-#     if_pass_only = True
 #if seq_resolved
 seq_resolved = args.seq_resolved
-# if seq_resolved_input == "True":
-#     seq_resolved = True
 #if include wrong length as TP
 wrong_len = args.wrong_len
-# if wrong_len_input == "True":
-#     wrong_len = True
+#if take GT info
+if_gt_info = args.gt_info
+#if consider phased
+if_phased = args.phased
+#if validate GT
 if_gt = args.gt_vali
 #chr names
 chr_list = []
@@ -154,20 +198,23 @@ else:
                 "16", "17", "18", "19", "20",
                 "21", "22", "X"]
 #approximate length of chromosomes
-chr_len = [250000000, 244000000, 199000000, 192000000, 182000000, 
-            172000000, 160000000, 147000000, 142000000, 136000000, 
+chr_len = [250000000, 244000000, 202000000, 194000000, 183000000, 
+            173000000, 161000000, 147000000, 151000000, 136000000, 
             136000000, 134000000, 116000000, 108000000, 103000000, 
-            90400000, 83300000, 80400000, 59200000, 64500000, 
-            48200000, 51400000, 157000000, 59400000]
+            96400000, 84300000, 80600000, 61800000, 66300000, 
+            48200000, 51400000, 157000000, 62500000]
 
 #max/min length of allowed SV not DUP
-memory_limit = 100000
+memory_limit = 9999
 memory_min = 10
 #max length of allowed DUP
 dup_memory_limit = 50000
 dup_memory_min = 10
 #max length of allowed interspersed DUP
 reg_dup_upper_len = 10000000
+#flanking regions for searching
+# region_len_m = 1000
+region_len_m = int(args.region_len_m)
 
 #valid types
 valid_types = ['DEL', 'INS', 'INV', 'DUP:TANDEM', 'DUP']
@@ -178,6 +225,27 @@ valid_aligned_portion = 0.9
 ins_rela_len_lb = 0.7
 ins_rela_len_ub = 1.3
 non_ins_rela_len_ub = 0.4
+
+#alt/ref length threshold for abn SV
+alt_len_lb = 10
+#group SVs
+max_btw_dist = 2000
+#max no of sv in a comb
+max_no_of_sv = 5
+#max no of sv in a group
+max_sv_group_size = 20
+
+
+#import script
+import get_conf_int
+import validate
+import get_align_info
+import agg_sv_align_info
+import agg_sv
+import combine
+
+import func
+import help_func
 
 
 #main function
@@ -193,7 +261,10 @@ def main():
     f.close()  
 
     #get tandem start and end list
-    tandem_start_list, tandem_end_list = get_align_info.get_chr_tandem_shart_end_list(tandem_info, if_hg38)
+    if tandem_info:
+        tandem_start_list, tandem_end_list = get_align_info.get_chr_tandem_shart_end_list(tandem_info, if_hg38)
+    else:
+        tandem_start_list, tandem_end_list = [], []
     
     #query asm files and ref fasta file
     query_fasta_file1 = pysam.FastaFile(query_file1)
@@ -285,14 +356,20 @@ def main():
     #     if len(rec.samples.values()) != 1:
     #         raise Exception("Wrong number of sample genotype(s)")
     #     gts = [s['GT'] for s in rec.samples.values()] 
+        ref_len = len(rec.ref)
+        alt_len = len(rec.alts[0])
         
-        sv_list.append(func.struc_var(count, rec.chrom, sv_type, rec.pos, rec.stop, sv_len, sv_gt, wrong_len))   
+        sv_list.append(func.struc_var(count, rec.chrom, sv_type, rec.pos, rec.stop, sv_len, sv_gt, wrong_len, ref_len, alt_len))   
         
         #add ins seq for seq-resolved insertion
         #no multi-allelic considered
         if (sv_type == 'INS') and seq_resolved:
             sv_list[len(sv_list)-1].ins_seq = rec.alts[0]
             sv_list[len(sv_list)-1].if_seq_resolved = True
+            
+        #add alt seq for abn DEL
+        if (sv_type == 'DEL') and alt_len > alt_len_lb:
+            sv_list[len(sv_list)-1].alt_seq = rec.alts[0]
         
     f.close()
     #index sv: second_filter: centromere, non-cov
@@ -302,13 +379,13 @@ def main():
         func.second_filter(sv, if_hg38, dict_centromere, exclude_assem1_non_cover, exclude_assem2_non_cover)
         func.third_filter(sv, memory_min, memory_limit, dup_memory_min, dup_memory_limit)
     
-    get_align_info.get_vali_info(output_dir, vcf_file, query_file1, 1, ref_file, interval, 
+    get_align_info.get_vali_info_abn(output_dir, vcf_file, query_file1, 1, ref_file, interval, 
               contig_name_list_1, contig_pos_list_1, contig_name_dict_1, memory_limit, if_hg38, chr_list,
-              tandem_start_list, tandem_end_list, tandem_info, sv_list, seq_resolved)
+              tandem_start_list, tandem_end_list, tandem_info, sv_list, seq_resolved, region_len_m)
     
-    get_align_info.get_vali_info(output_dir, vcf_file, query_file2, 2, ref_file, interval, 
+    get_align_info.get_vali_info_abn(output_dir, vcf_file, query_file2, 2, ref_file, interval, 
               contig_name_list_2, contig_pos_list_2, contig_name_dict_2, memory_limit, if_hg38, chr_list,
-              tandem_start_list, tandem_end_list, tandem_info, sv_list, seq_resolved)
+              tandem_start_list, tandem_end_list, tandem_info, sv_list, seq_resolved, region_len_m)
     
     #get validation info
     func.write_vali_info(sv_list, output_dir, if_gt)
@@ -370,8 +447,10 @@ def main():
     #     if len(rec.samples.values()) != 1:
     #         raise Exception("Wrong number of sample genotype(s)")
     #     gts = [s['GT'] for s in rec.samples.values()] 
+        ref_len = len(rec.ref)
+        alt_len = len(rec.alts[0])
         
-        chrx_sv_list.append(func.struc_var(count, rec.chrom, sv_type, rec.pos, rec.stop, sv_len, sv_gt, wrong_len))   
+        chrx_sv_list.append(func.struc_var(count, rec.chrom, sv_type, rec.pos, rec.stop, sv_len, sv_gt, wrong_len, ref_len, alt_len))   
         
         #add ins seq for seq-resolved insertion
         #no multi-allelic considered
@@ -387,16 +466,17 @@ def main():
         func.second_filter_chrx(sv, if_hg38, dict_centromere, exclude_assem1_non_cover, exclude_assem2_non_cover)
         func.third_filter(sv, memory_min, memory_limit, dup_memory_min, dup_memory_limit)
     
-    get_align_info.get_vali_info(output_dir, vcf_file, query_file1, 1, ref_file, interval, 
+    get_align_info.get_vali_info_abn(output_dir, vcf_file, query_file1, 1, ref_file, interval, 
               contig_name_list_1, contig_pos_list_1, contig_name_dict_1, memory_limit, if_hg38, chr_list,
-              tandem_start_list, tandem_end_list, tandem_info, chrx_sv_list, seq_resolved)
+              tandem_start_list, tandem_end_list, tandem_info, chrx_sv_list, seq_resolved, region_len_m)
     
-    get_align_info.get_vali_info(output_dir, vcf_file, query_file2, 2, ref_file, interval, 
+    get_align_info.get_vali_info_abn(output_dir, vcf_file, query_file2, 2, ref_file, interval, 
               contig_name_list_2, contig_pos_list_2, contig_name_dict_2, memory_limit, if_hg38, chr_list,
-              tandem_start_list, tandem_end_list, tandem_info, chrx_sv_list, seq_resolved)            
+              tandem_start_list, tandem_end_list, tandem_info, chrx_sv_list, seq_resolved, region_len_m)            
     
     if len(chrx_sv_list) > 0:
         func.write_vali_info_chrx(chrx_sv_list, output_dir, if_gt)
+
     
     ##################################################################################
     ##################################################################################
@@ -452,8 +532,10 @@ def main():
     #     if len(rec.samples.values()) != 1:
     #         raise Exception("Wrong number of sample genotype(s)")
     #     gts = [s['GT'] for s in rec.samples.values()] 
+        ref_len = len(rec.ref)
+        alt_len = len(rec.alts[0])
         
-        sv_list.append(func.struc_var(count, rec.chrom, sv_type, rec.pos, rec.stop, sv_len, sv_gt, wrong_len))   
+        sv_list.append(func.struc_var(count, rec.chrom, sv_type, rec.pos, rec.stop, sv_len, sv_gt, wrong_len, ref_len, alt_len))   
         
         #add ins seq for seq-resolved insertion
         #no multi-allelic considered
@@ -617,7 +699,131 @@ def main():
         #################################
         #################################
         func.write_vali_info_reg_dup(sv_list, output_dir, if_gt)
+        
+
+        
+    ##################################################################################
+    ##################################################################################
+    #analysis SV in aggregation
+            
+    #build sv groups
+    sv_list = agg_sv.idx_sv(vcf_file)
+    sv_idx_dict = agg_sv.build_sv_idx_dict(sv_list)
+
+    sv_groups = agg_sv.get_sv_groups(sv_list, max_btw_dist, max_sv_group_size)
+
+    assert len(sv_groups) > 0
+
+    #build sv combs
+    sv_groups_combs = []
+    for sv_group in sv_groups:
+        comb_sv_list = agg_sv.get_sv_comb(sv_group, if_gt_info, if_phased, sv_idx_dict, max_no_of_sv)
+
+        for comb_sv in comb_sv_list:
+            sv_group.add_comb(comb_sv)
+
+        sv_groups_combs.append(comb_sv_list)
+
+    #build comb dict based on [idx]
+    comb_dict = agg_sv.build_sv_comb_idx_dict(sv_groups_combs)
+
+    query_fasta_file_1 = pysam.FastaFile(query_file1)
+    query_fasta_file_2 = pysam.FastaFile(query_file2)
+    ref_fasta_file = pysam.FastaFile(ref_file)
+    cur_ref_name = ""
+
+    #test
+    counter = 0
+
+    for comb_sv_list in sv_groups_combs:
+        for comb_sv in comb_sv_list:
+            #test
+#             counter += 1
+#             if counter % 500 == 1:
+#                 print(counter)
+
+            if cur_ref_name != comb_sv.ref_name:
+                cur_ref_name = comb_sv.ref_name
+                ref_rec = ref_fasta_file.fetch(cur_ref_name)
+
+            help_func.get_comb_vali_info_len_only(comb_sv, 1, interval, contig_name_list_1, contig_pos_list_1, 
+                                         contig_name_dict_1, if_hg38, ref_rec, query_fasta_file_1, sv_idx_dict, region_len_m)
+
+            help_func.get_comb_vali_info_len_only(comb_sv, 2, interval, contig_name_list_2, contig_pos_list_2, 
+                                         contig_name_dict_2, if_hg38, ref_rec, query_fasta_file_2, sv_idx_dict, region_len_m)
+
+            if (not comb_sv.analyzed_hap1) or (not comb_sv.analyzed_hap2):
+                continue
+
+    #         help_func.update_sv_res_len_only(comb_sv)
+
+
+    #for each sv group, find the top k comb in terms for the rela length (for either haps)
+    for cur_group in sv_groups:
+        #test
+    #     print(cur_group.comb_list)
+        cur_group.get_top_comb(comb_dict)
+
+
+
+    cur_ref_name = ""
+
+    #test
+    counter = 0
+
+    for cur_group in sv_groups:
+        #can be empty if every comb failed to be analyzed
+        if len(cur_group.top_rela_len_comb_idx) > 0:
+
+            for _, comb_key in cur_group.top_rela_len_comb_idx:
+                #test
+#                 counter += 1
+#                 if counter % 100 == 1:
+#                     print(counter)
+
+                comb_sv = comb_dict[comb_key]
+
+                if cur_ref_name != comb_sv.ref_name:
+                    cur_ref_name = comb_sv.ref_name
+                    ref_rec = ref_fasta_file.fetch(cur_ref_name)
+
+                help_func.get_comb_vali_info_align_only(comb_sv, 1, interval, contig_name_list_1, contig_pos_list_1, 
+                                             contig_name_dict_1, if_hg38, ref_rec, query_fasta_file_1, sv_idx_dict)
+                help_func.get_comb_vali_info_align_only(comb_sv, 2, interval, contig_name_list_2, contig_pos_list_2, 
+                                             contig_name_dict_2, if_hg38, ref_rec, query_fasta_file_2, sv_idx_dict)
+
+                if (not comb_sv.analyzed_hap1) or (not comb_sv.analyzed_hap2):
+                    continue
+
+
+    #update SV info
+
+    for cur_group in sv_groups:
+        #don't consider comb not in the top list
+        #can be empty if every comb failed to be analyzed
+        if len(cur_group.top_rela_len_comb_idx) > 0:
+            for _, comb_key in cur_group.top_rela_len_comb_idx:
+                comb_sv = comb_dict[comb_key]
+
+                #skip NA comb_sv
+                if (not comb_sv.analyzed_hap1) or (not comb_sv.analyzed_hap2):
+                    continue
+
+                for sv_idx in comb_key:
+                    agg_sv.update_sv_with_comb_res(sv_idx_dict[sv_idx], comb_sv, if_gt)
+
+    #write SV info
+    func.write_vali_info_agg(sv_list, output_dir, if_gt)
     
+    
+    ##################################################################################
+    ##################################################################################
+    #combine results
+    
+    combine.combine_output()
+    
+    #remove unnecessary files
+#     combine.remove_files()
     
 if __name__ == "__main__":
     main()

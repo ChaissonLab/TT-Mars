@@ -20,7 +20,17 @@ import get_align_info
 ########################################
 #define class
 class struc_var:
-    def __init__(self, idx, ref_name, sv_type, sv_pos, sv_stop, length, gt, wrong_len):
+    def __init__(self, 
+                 idx, 
+                 ref_name, 
+                 sv_type, 
+                 sv_pos, 
+                 sv_stop, 
+                 length, 
+                 gt, 
+                 wrong_len,
+                 ref_len,
+                 alt_len):
         self.idx = idx
         self.ref_name = ref_name
         self.sv_pos = sv_pos
@@ -29,6 +39,12 @@ class struc_var:
         self.length = length
         self.gt = gt
         self.wrong_len = wrong_len
+        self.ref_len = ref_len
+        self.alt_len = alt_len
+        self.query_int_start1 = -1
+        self.query_int_end1= -1
+        self.query_int_start2 = -1
+        self.query_int_end2= -1
         #if the call is part of an aggregate SV
         self.is_agg = False
         #if second filtered out
@@ -66,6 +82,8 @@ class struc_var:
         
         self.ins_seq = ""
         self.if_seq_resolved = False
+        
+        self.alt_seq = ""
         
         #for dup validation
         self.valid_non_ins = False
@@ -113,28 +131,10 @@ class struc_var:
     
     #TP when wrong length flag presents -- looser rules for TP
     def check_tp_wlen(self, rela_len, rela_score):
-        result = True
-        if self.sv_type in ['DEL', 'DUP', 'DUP:TANDEM']:
-            if rela_score >= 0 and rela_score <= 2.5:
-                if rela_len >= -0.05*rela_score + 0.6 and rela_len <= 0.05*rela_score + 1.4:
-                    result = True
-                else:
-                    result = False
-            elif rela_score > 2.5:
-                if rela_len >= 0.475 and rela_len <= 1.525:
-                    result = True
-                else:
-                    result = False
-            else:
-                result = False
-        elif self.sv_type == 'INS':
-            #not seq-resolved
-            #if len(self.ins_seq) == 0:
-            if not self.if_seq_resolved:
-                if rela_len < 0.475 or rela_len > 1.525:
-                    result = False
-            #seq-resolved
-            else:
+        if not self.is_third_fil:
+            #small calls
+            result = True
+            if self.sv_type in ['DEL', 'DUP', 'DUP:TANDEM']:
                 if rela_score >= 0 and rela_score <= 2.5:
                     if rela_len >= -0.05*rela_score + 0.6 and rela_len <= 0.05*rela_score + 1.4:
                         result = True
@@ -146,12 +146,54 @@ class struc_var:
                     else:
                         result = False
                 else:
-                    result = False                
-                
-        elif self.sv_type == 'INV':
-            if rela_score <= 0:
-                result = False
-        return result
+                    result = False
+            elif self.sv_type == 'INS':
+                #not seq-resolved
+                #if len(self.ins_seq) == 0:
+                if not self.if_seq_resolved:
+                    if rela_len < 0.475 or rela_len > 1.525:
+                        result = False
+                #seq-resolved
+                else:
+                    if rela_score >= 0 and rela_score <= 2.5:
+                        if rela_len >= -0.05*rela_score + 0.6 and rela_len <= 0.05*rela_score + 1.4:
+                            result = True
+                        else:
+                            result = False
+                    elif rela_score > 2.5:
+                        if rela_len >= 0.475 and rela_len <= 1.525:
+                            result = True
+                        else:
+                            result = False
+                    else:
+                        result = False                
+
+            elif self.sv_type == 'INV':
+                if rela_score <= 0:
+                    result = False
+            return result
+        else:
+            #large calls
+            result = False
+            if self.sv_type in ['DEL', 'DUP', 'DUP:TANDEM']:
+                if rela_score >= 0:
+                    if rela_len <= 1.525 and rela_len >= 0.475:
+                        result = True
+            elif self.sv_type == 'INS':
+                #not seq-resolved
+                #if len(self.ins_seq) == 0:
+                if not self.if_seq_resolved:
+                    if rela_len >= 0.475 and rela_len <= 1.525:
+                        result = True
+                #seq-resolved
+                else:
+                    if rela_score >= 0:
+                        if rela_len <= 1.525 and rela_len >= 0.475:
+                            result = True              
+            elif self.sv_type == 'INV':
+                if rela_score > 0:
+                    result = True
+            return result            
         
     def print_info(self):
         print(self.idx, self.ref_name, self.sv_pos, self.sv_stop, self.sv_type, self.length, self.gt, self.is_agg, self.is_sec_fil, self.is_third_fil)
@@ -396,17 +438,18 @@ def second_filter(sv, if_hg38, dict_centromere, exclude_assem1_non_cover, exclud
     sv_pos = sv.sv_pos
     sv_stop = sv.sv_stop
 
-    if if_hg38:
-        centro_start = int(dict_centromere[ref_name][0])
-        centro_end = int(dict_centromere[ref_name][1])
-    else:
-        centro_start = int(dict_centromere['chr'+ref_name][0])
-        centro_end = int(dict_centromere['chr'+ref_name][1])
+    if dict_centromere:
+        if if_hg38:
+            centro_start = int(dict_centromere[ref_name][0])
+            centro_end = int(dict_centromere[ref_name][1])
+        else:
+            centro_start = int(dict_centromere['chr'+ref_name][0])
+            centro_end = int(dict_centromere['chr'+ref_name][1])
 
-    #centromere
-    if (sv_pos > centro_start and sv_pos < centro_end) or (sv_stop > centro_start and sv_stop < centro_end):
-        sv.is_sec_fil = True
-        return True
+        #centromere
+        if (sv_pos > centro_start and sv_pos < centro_end) or (sv_stop > centro_start and sv_stop < centro_end):
+            sv.is_sec_fil = True
+            return True
         
     #non-cov
     list_to_check = [str(ref_name), str(sv_pos), str(sv_stop)]
@@ -422,17 +465,18 @@ def second_filter_chrx(sv, if_hg38, dict_centromere, exclude_assem1_non_cover, e
     sv_pos = sv.sv_pos
     sv_stop = sv.sv_stop
 
-    if if_hg38:
-        centro_start = int(dict_centromere[ref_name][0])
-        centro_end = int(dict_centromere[ref_name][1])
-    else:
-        centro_start = int(dict_centromere['chr'+ref_name][0])
-        centro_end = int(dict_centromere['chr'+ref_name][1])
+    if dict_centromere:
+        if if_hg38:
+            centro_start = int(dict_centromere[ref_name][0])
+            centro_end = int(dict_centromere[ref_name][1])
+        else:
+            centro_start = int(dict_centromere['chr'+ref_name][0])
+            centro_end = int(dict_centromere['chr'+ref_name][1])
 
-    #centromere
-    if (sv_pos > centro_start and sv_pos < centro_end) or (sv_stop > centro_start and sv_stop < centro_end):
-        sv.is_sec_fil = True
-        return True
+        #centromere
+        if (sv_pos > centro_start and sv_pos < centro_end) or (sv_stop > centro_start and sv_stop < centro_end):
+            sv.is_sec_fil = True
+            return True
         
     #non-cov
     list_to_check = [str(ref_name), str(sv_pos), str(sv_stop)]
@@ -463,6 +507,8 @@ def write_vali_info(sv_list, output_dir, if_gt):
             continue
         
         res = sv.get_vali_res(if_gt)
+        
+        g.write(str(sv.idx) + "\t")
         
         g.write(str(sv.ref_name) + "\t")
         g.write(str(sv.sv_pos) + "\t")
@@ -846,6 +892,8 @@ def write_vali_info_reg_dup(sv_list, output_dir, if_gt):
         if (not sv.analyzed_hap1) or (not sv.analyzed_hap2):
             continue
         
+        g.write(str(sv.idx) + "\t")
+        
         g.write(str(sv.ref_name) + "\t")
         g.write(str(sv.sv_pos) + "\t")
         g.write(str(sv.sv_stop) + "\t")
@@ -869,6 +917,8 @@ def write_vali_info_chrx(sv_list, output_dir, if_gt):
         
         res = sv.get_vali_res_chrx(if_gt)
         
+        g.write(str(sv.idx) + "\t")
+        
         g.write(str(sv.ref_name) + "\t")
         g.write(str(sv.sv_pos) + "\t")
         g.write(str(sv.sv_stop) + "\t")
@@ -877,6 +927,32 @@ def write_vali_info_chrx(sv_list, output_dir, if_gt):
         g.write(str(res[2]) + "\t")
         g.write(str(res[0]))
                 
+        if if_gt:
+            g.write("\t" + str(res[3]))
+        
+        g.write("\n")
+    g.close()
+    
+#get validation info
+def write_vali_info_agg(sv_list, output_dir, if_gt):
+    g = open(output_dir + "ttmars_agg_res.txt", "w")
+    for sv in sv_list:
+        #skip if not analyzed
+        if (not sv.analyzed_hap1) or (not sv.analyzed_hap2):
+            continue
+        
+        res = sv.get_vali_res(if_gt)
+        
+        g.write(str(sv.idx) + "\t")
+        
+        g.write(str(sv.ref_name) + "\t")
+        g.write(str(sv.sv_pos) + "\t")
+        g.write(str(sv.sv_stop) + "\t")
+        g.write(str(sv.sv_type) + "\t")
+        g.write(str(res[1]) + "\t")
+        g.write(str(res[2]) + "\t")
+        g.write(str(res[0]))
+        
         if if_gt:
             g.write("\t" + str(res[3]))
         

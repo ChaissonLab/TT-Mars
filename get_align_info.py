@@ -234,6 +234,9 @@ def get_chr_tandem_shart_end_list(tandem_info, if_hg38):
 
 #check if in tandem repeats regions
 def ol_tandem(ref_name, sv_pos, sv_stop, tandem_start_list, tandem_end_list, if_hg38, tandem_info):
+    if not tandem_info:
+        return [-1, -1]
+    
     ref_idx = get_int_chr_name(ref_name, if_hg38)
     tandem_start_idx = tandem_start_list[ref_idx - 1]
     tandem_end_idx = tandem_end_list[ref_idx - 1]
@@ -253,9 +256,9 @@ def ol_tandem(ref_name, sv_pos, sv_stop, tandem_start_list, tandem_end_list, if_
     
     return [tandem_region_sv_start, tandem_region_sv_end]
 
-def get_intervals(sv, cur_ref_name, ref_fasta_file, tandem_start_list, tandem_end_list, if_hg38, tandem_info, interval, memory_limit, contig_name_list, contig_pos_list, contig_name_dict, hap, ref_rec):
+def get_intervals(sv, cur_ref_name, ref_fasta_file, tandem_start_list, tandem_end_list, if_hg38, tandem_info, interval, memory_limit, contig_name_list, contig_pos_list, contig_name_dict, hap, ref_rec, region_len_m):
     if sv.sv_type in ['INS', 'DEL', 'DUP:TANDEM', 'DUP']:
-        region_len_m = 500
+#         region_len_m = 500
         
         check_tandem = ol_tandem(sv.ref_name, sv.sv_pos, sv.sv_stop, tandem_start_list, tandem_end_list, if_hg38, tandem_info)
         if check_tandem[0] != -1:
@@ -382,7 +385,7 @@ def get_intervals(sv, cur_ref_name, ref_fasta_file, tandem_start_list, tandem_en
     #if inv, no need to use the flexible interval
     #bc/ flexi int will be found by relative length
     elif sv.sv_type == 'INV':
-        region_len = 200
+        region_len = 500
 
         check_tandem = ol_tandem(sv.ref_name, sv.sv_pos, sv.sv_stop, tandem_start_list, tandem_end_list, if_hg38, tandem_info)
         if check_tandem[0] != -1:
@@ -459,6 +462,171 @@ def get_intervals(sv, cur_ref_name, ref_fasta_file, tandem_start_list, tandem_en
             sv.query_name_hap2 = contig_name_dict[start_contig_name_ctr]
             sv.neg_strand_hap2 = neg_strand
         
+        return True
+
+#for abn DEL only
+def get_intervals_abn(sv, cur_ref_name, ref_fasta_file, tandem_start_list, tandem_end_list, if_hg38, tandem_info, interval, memory_limit, contig_name_list, contig_pos_list, contig_name_dict, hap, ref_rec, region_len_m):
+    if sv.sv_type in ['DEL']:
+#         region_len_m = 500
+        #if sv overlaps with tandem repeats
+        check_tandem = ol_tandem(sv.ref_name, sv.sv_pos - interval, sv.sv_stop + interval, tandem_start_list, tandem_end_list, if_hg38, tandem_info)
+        if check_tandem[0] != -1:
+            ref_start_start = max(getRefStart(int(tandem_info[check_tandem[0]][1]), interval) - region_len_m, 0)
+            ref_start_end = getRefStart(sv.sv_pos - interval, interval)
+        else:
+            ref_start_start = max(getRefStart(sv.sv_pos - interval, interval) - region_len_m, 0)
+            ref_start_end = getRefStart(sv.sv_pos - interval, interval)
+        if check_tandem[1] != -1:
+            ref_end_start = getRefEnd(sv.sv_stop + interval, interval)
+            ref_end_end = min(getRefEnd(int(tandem_info[check_tandem[1]][2]), interval) + region_len_m, getRefEnd(len(ref_rec), interval) - interval)
+        else:
+            ref_end_start = getRefEnd(sv.sv_stop + interval, interval)
+            ref_end_end = min(getRefEnd(sv.sv_stop + interval, interval) + region_len_m, getRefEnd(len(ref_rec), interval) - interval) 
+        
+        #if tandem repeat regions too large
+        if check_tandem[0] != -1 and check_tandem[1] != -1:
+            if int(tandem_info[check_tandem[1]][2]) - int(tandem_info[check_tandem[0]][1]) > memory_limit:
+                ref_start_start = max(getRefStart(sv.sv_pos - interval, interval) - region_len_m, 0)
+                ref_start_end = getRefStart(sv.sv_pos - interval, interval)
+                ref_end_start = getRefEnd(sv.sv_stop + interval, interval)
+                ref_end_end = min(getRefEnd(sv.sv_stop + interval, interval) + region_len_m, getRefEnd(len(ref_rec), interval) - interval)
+
+        #first level key: chr index as an int
+        int_ref_name = get_int_chr_name(sv.ref_name, if_hg38)
+        lo_list_index = int_ref_name - 1
+        first_key = lo_list_index
+
+        #second level key: ref list_pos
+
+        if sv.idx % 1000 == 0:
+            print(sv.idx)   
+
+        min_diff_len = 100000000
+        ref_start_best = ref_start_start
+        ref_end_best = ref_end_start
+        query_start_best = None
+        query_end_best = None
+        start_contig_name_ctr = -1
+        end_contig_name_ctr = -1
+
+        neg_strand = False
+        
+        #get the query interval start / end
+        query_key_start = getRefStart(sv.sv_pos, interval)//interval
+        query_key_end = getRefEnd(sv.sv_stop, interval)//interval
+
+        start_contig_name_ctr_query = contig_name_list[first_key][query_key_start]
+        end_contig_name_ctr_query = contig_name_list[first_key][query_key_end]
+        
+        if start_contig_name_ctr_query == -1 or end_contig_name_ctr_query == -1:
+            #print("wrong second key")
+            message = "wrong_sec_key 1"
+            #write_err(output_file_name, message, g)
+            return False
+
+        if start_contig_name_ctr_query != end_contig_name_ctr_query:
+            #print("Not same contig")
+            message = "not_same_contig 1"
+            #write_err(output_file_name, message, g)
+            return False
+        
+        query_int_start = contig_pos_list[first_key][query_key_start]
+        query_int_end = contig_pos_list[first_key][query_key_end]
+    
+        #in case: negtive strand
+        if query_int_start < query_int_end:
+            tem = query_int_start
+            query_int_start = query_int_end
+            query_int_end = tem
+
+        for ref_end_cand in range(ref_end_start, ref_end_end, interval):
+            for ref_start_cand in range(ref_start_end, ref_start_start, -interval):
+                if ref_end_cand <= ref_start_cand:
+                    continue
+
+                #second_key_start = str(ref_start_cand)
+                #second_key_end = str(ref_end_cand)
+                second_key_start = ref_start_cand//interval
+                second_key_end = ref_end_cand//interval
+
+                start_contig_name_ctr_cand = contig_name_list[first_key][second_key_start]
+                end_contig_name_ctr_cand = contig_name_list[first_key][second_key_end]
+
+                if start_contig_name_ctr_cand == -1 or end_contig_name_ctr_cand == -1:
+                    #print("wrong second key")
+                    message = "wrong_sec_key"
+                    #write_err(output_file_name, message, g)
+                    continue
+
+                if start_contig_name_ctr_cand != end_contig_name_ctr_cand:
+                    #print("Not same contig")
+                    message = "not_same_contig"
+                    #write_err(output_file_name, message, g)
+                    continue
+
+                query_start = contig_pos_list[first_key][second_key_start]
+                query_end = contig_pos_list[first_key][second_key_end]
+
+                neg_strand_tep = False
+                #in case: negtive strand
+                if query_end < query_start:
+                    tem = query_start
+                    query_start = query_end
+                    query_end = tem
+                    neg_strand_tep = True
+
+                #take the best relative length to be the optimal interval
+                if abs((query_end - query_start) - (ref_end_cand - ref_start_cand) - sv.length) < min_diff_len:
+                    min_diff_len = abs((query_end - query_start) - (ref_end_cand - ref_start_cand) - sv.length)
+                    ref_start_best = ref_start_cand
+                    ref_end_best = ref_end_cand
+                    query_start_best = query_start
+                    query_end_best = query_end
+                    start_contig_name_ctr = start_contig_name_ctr_cand
+                    end_contig_name_ctr = end_contig_name_ctr_cand
+
+                    if neg_strand_tep:
+                        neg_strand = True
+                    else:
+                        neg_strand = False
+                        
+        if start_contig_name_ctr != start_contig_name_ctr_query:
+            message = "not_same_contig 2"
+            #write_err(output_file_name, message, g)
+            return False
+
+        if query_start_best == None or query_end_best == None:
+            #print("Wrong query pos")
+            message = "Wrong_query_pos"
+            #write_err(output_file_name, message, g)
+            return False
+        
+        if ref_start_best == sv.sv_pos:
+            ref_start_best = ref_start_best - 1
+        if ref_end_best == sv.sv_stop:
+            ref_end_best = ref_end_best + 1
+        if query_end_best == query_start_best:
+            query_end_best += 1
+        
+        if hap == 1:
+            sv.ref_start_best_hap1 = ref_start_best
+            sv.ref_end_best_hap1 = ref_end_best
+            sv.query_start_best_hap1 = query_start_best
+            sv.query_end_best_hap1 = query_end_best
+            sv.query_name_hap1 = contig_name_dict[start_contig_name_ctr]
+            sv.neg_strand_hap1 = neg_strand
+            sv.query_int_start1 = query_int_start
+            sv.query_int_end1 = query_int_end
+        elif hap == 2:
+            sv.ref_start_best_hap2 = ref_start_best
+            sv.ref_end_best_hap2 = ref_end_best
+            sv.query_start_best_hap2 = query_start_best
+            sv.query_end_best_hap2 = query_end_best
+            sv.query_name_hap2 = contig_name_dict[start_contig_name_ctr]
+            sv.neg_strand_hap2 = neg_strand
+            sv.query_int_start2 = query_int_start
+            sv.query_int_end2 = query_int_end
+
         return True
 
 #for calls large than memory_limit
@@ -543,6 +711,125 @@ def get_large_intervals(sv, cur_ref_name, ref_fasta_file, tandem_start_list, tan
         
         return True    
 
+#for calls large than memory_limit
+def get_large_intervals_abn(sv, cur_ref_name, ref_fasta_file, tandem_start_list, tandem_end_list, if_hg38, tandem_info, interval, memory_limit, contig_name_list, contig_pos_list, contig_name_dict, hap, ref_rec):
+        region_len = int(0.5 * abs(sv.length))
+        #region_len = 200
+
+        check_tandem = ol_tandem(sv.ref_name, sv.sv_pos - interval, sv.sv_stop + interval, tandem_start_list, tandem_end_list, if_hg38, tandem_info)
+        if check_tandem[0] != -1:
+            ref_start = getRefStart(int(tandem_info[check_tandem[0]][1]), interval)
+        else:
+            ref_start = getRefStart(sv.sv_pos - interval, interval)
+        if check_tandem[1] != -1:
+            ref_end = getRefEnd(int(tandem_info[check_tandem[1]][2]), interval)
+        else:
+            ref_end = getRefEnd(sv.sv_stop + interval, interval)
+
+#         ref_start = getRefStart(sv_pos, interval)
+#         ref_end = getRefEnd(sv_stop, interval)
+
+        #first level key: chr index as an int
+        int_ref_name = get_int_chr_name(sv.ref_name, if_hg38)
+        lo_list_index = int_ref_name - 1
+        first_key = lo_list_index
+
+        if sv.idx % 1000 == 0:
+            print(sv.idx)  
+
+        ref_start = max(1, ref_start-region_len)
+        second_key_start = int((ref_start)//interval)
+        
+        ref_end = min((len(contig_name_list[first_key]) - 1) * interval, ref_end+region_len)
+        second_key_end = int((ref_end)//interval)
+
+        start_contig_name_ctr = contig_name_list[first_key][second_key_start]
+        end_contig_name_ctr = contig_name_list[first_key][second_key_end]
+
+        if start_contig_name_ctr == -1 or end_contig_name_ctr == -1:
+            #print("wrong second key")
+            message = "wrong_sec_key"
+            #write_err(output_file_name, message, g)
+            return False
+
+        if start_contig_name_ctr != end_contig_name_ctr:
+            #print("Not same contig")
+            message = "not_same_contig"
+            #write_err(output_file_name, message, g)
+            return False
+
+        query_start = contig_pos_list[first_key][second_key_start]
+        query_end = contig_pos_list[first_key][second_key_end]
+        
+        #get the query interval start / end
+        query_key_start = getRefStart(sv.sv_pos, interval)//interval
+        query_key_end = getRefEnd(sv.sv_stop, interval)//interval
+
+        start_contig_name_ctr_query = contig_name_list[first_key][query_key_start]
+        end_contig_name_ctr_query = contig_name_list[first_key][query_key_end]
+        
+        if start_contig_name_ctr != start_contig_name_ctr_query:
+            message = "not_same_contig 2"
+            #write_err(output_file_name, message, g)
+            return False
+        
+        if start_contig_name_ctr_query == -1 or end_contig_name_ctr_query == -1:
+            #print("wrong second key")
+            message = "wrong_sec_key 1"
+            #write_err(output_file_name, message, g)
+            return False
+
+        if start_contig_name_ctr_query != end_contig_name_ctr_query:
+            #print("Not same contig")
+            message = "not_same_contig 1"
+            #write_err(output_file_name, message, g)
+            return False
+        
+        query_int_start = contig_pos_list[first_key][query_key_start]
+        query_int_end = contig_pos_list[first_key][query_key_end]
+    
+        #in case: negtive strand
+        if query_int_start < query_int_end:
+            tem = query_int_start
+            query_int_start = query_int_end
+            query_int_end = tem
+
+        neg_strand = False
+        #in case: negtive strand
+        if query_end < query_start:
+            tem = query_start
+            query_start = query_end
+            query_end = tem
+            neg_strand = True
+            
+        if ref_start == sv.sv_pos:
+            ref_start = ref_start - 1
+        if ref_end == sv.sv_stop:
+            ref_end = ref_end + 1
+        if query_end == query_start:
+            query_end += 1
+        
+        if hap == 1:
+            sv.ref_start_best_hap1 = ref_start
+            sv.ref_end_best_hap1 = ref_end
+            sv.query_start_best_hap1 = query_start
+            sv.query_end_best_hap1 = query_end
+            sv.query_name_hap1 = contig_name_dict[start_contig_name_ctr]
+            sv.neg_strand_hap1 = neg_strand
+            sv.query_int_start1 = query_int_start
+            sv.query_int_end1 = query_int_end
+        elif hap == 2:
+            sv.ref_start_best_hap2 = ref_start
+            sv.ref_end_best_hap2 = ref_end
+            sv.query_start_best_hap2 = query_start
+            sv.query_end_best_hap2 = query_end
+            sv.query_name_hap2 = contig_name_dict[start_contig_name_ctr]
+            sv.neg_strand_hap2 = neg_strand
+            sv.query_int_start1 = query_int_start
+            sv.query_int_end1 = query_int_end
+        
+        return True 
+    
 #write vali info
 def write_vali_info(g, sv, hap):
     g.write(str(sv.idx) + "\t")
@@ -635,11 +922,27 @@ def align_before_after(output_dir, sv, query_seq, ref_seq_1, ref_seq_2):
         os.remove(output_dir+"tmp_query.fasta")
         
     return alignment_beforeSV, alignment_afterSV
+
+def align_before_after_abn(output_dir, sv, query_seq, ref_seq_1, query_afterSV_seq, ref_seq_2):
+    #within length limit
+#     if not sv.is_third_fil:
+    aligner = Align.PairwiseAligner()
+    aligner.mode = 'global'
+    #aligner.mode = 'local'
+    aligner.match_score = 1
+    aligner.mismatch_score = -1
+    aligner.open_gap_score = -1
+    aligner.extend_gap_score = -0.5
+    #aligner.score_only = True
+    alignment_beforeSV = aligner.score(query_seq, ref_seq_1)
+    alignment_afterSV = aligner.score(query_afterSV_seq, ref_seq_2)
+        
+    return alignment_beforeSV, alignment_afterSV
     
 #get vcf file and run score_callset on each SV record
 def get_vali_info(output_dir, vcf_file, query_file, hap, ref_file, interval, 
                   contig_name_list, contig_pos_list, contig_name_dict, memory_limit, if_hg38, chr_list,
-                  tandem_start_list, tandem_end_list, tandem_info, sv_list, seq_resolved):
+                  tandem_start_list, tandem_end_list, tandem_info, sv_list, seq_resolved, region_len_m):
     #query_file = query_file2
     #hap = 2
     name_str = "assem" + str(hap)
@@ -666,7 +969,7 @@ def get_vali_info(output_dir, vcf_file, query_file, hap, ref_file, interval,
         #filtered by size
         if not sv.is_third_fil:
             #Search for the best second_key_start and second_key_end in the regions
-            if not get_intervals(sv, cur_ref_name, ref_fasta_file, tandem_start_list, tandem_end_list, if_hg38, tandem_info, interval, memory_limit, contig_name_list, contig_pos_list, contig_name_dict, hap, ref_rec):
+            if not get_intervals(sv, cur_ref_name, ref_fasta_file, tandem_start_list, tandem_end_list, if_hg38, tandem_info, interval, memory_limit, contig_name_list, contig_pos_list, contig_name_dict, hap, ref_rec, region_len_m):
                 continue
         else:
             #get the intervals, won't search 
@@ -854,6 +1157,346 @@ def get_vali_info(output_dir, vcf_file, query_file, hap, ref_file, interval,
         write_vali_info(g, sv, hap)
     g.close()
 
+#get vcf file and run score_callset on each SV record
+def get_vali_info_abn(output_dir, vcf_file, query_file, hap, ref_file, interval, 
+                      contig_name_list, contig_pos_list, contig_name_dict, memory_limit, if_hg38, chr_list,
+                      tandem_start_list, tandem_end_list, tandem_info, sv_list, seq_resolved, region_len_m):
+    #query_file = query_file2
+    #hap = 2
+    name_str = "assem" + str(hap)
+    chromosome = "all"
+    output_file_name = output_dir + "align_info_" + name_str + "_chr" + chromosome + ".txt"
+    
+    
+    query_fasta_file = pysam.FastaFile(query_file)
+    
+    ref_fasta_file = pysam.FastaFile(ref_file)
+    cur_ref_name = ""
+
+    abn_len = 10
+    
+    g = open(output_file_name, "w")
+    for sv in sv_list:
+        
+        #filtered by centromere, non-cov
+        if sv.is_sec_fil:
+            continue
+            
+        if cur_ref_name != sv.ref_name:
+            cur_ref_name = sv.ref_name
+            ref_rec = ref_fasta_file.fetch(cur_ref_name)
+            
+        #filtered by size
+        if not sv.is_third_fil:
+            #Search for the best second_key_start and second_key_end in the regions
+            if sv.sv_type == "DEL" and sv.alt_len > abn_len:
+                if not get_intervals_abn(sv, cur_ref_name, ref_fasta_file, tandem_start_list, tandem_end_list, if_hg38, tandem_info, interval, memory_limit, contig_name_list, contig_pos_list, contig_name_dict, hap, ref_rec, region_len_m):
+                    continue
+            else:
+                if not get_intervals(sv, cur_ref_name, ref_fasta_file, tandem_start_list, tandem_end_list, if_hg38, tandem_info, interval, memory_limit, contig_name_list, contig_pos_list, contig_name_dict, hap, ref_rec, region_len_m):
+                    continue
+        else:
+            #get the intervals, won't search 
+            if sv.sv_type == "DEL" and sv.alt_len > abn_len:
+                if not get_large_intervals_abn(sv, cur_ref_name, ref_fasta_file, tandem_start_list, tandem_end_list, if_hg38, tandem_info, interval, memory_limit, contig_name_list, contig_pos_list, contig_name_dict, hap, ref_rec):
+                    continue
+            else:
+                if not get_large_intervals(sv, cur_ref_name, ref_fasta_file, tandem_start_list, tandem_end_list, if_hg38, tandem_info, interval, memory_limit, contig_name_list, contig_pos_list, contig_name_dict, hap, ref_rec):
+                    continue
+        
+        if hap == 1:
+            query_rec = query_fasta_file.fetch(sv.query_name_hap1)
+            ref_start = sv.ref_start_best_hap1
+            ref_end = sv.ref_end_best_hap1
+            query_start = sv.query_start_best_hap1
+            query_end = sv.query_end_best_hap1
+            neg_strand = sv.neg_strand_hap1
+            query_int_start = sv.query_int_start1
+            query_int_end = sv.query_int_end1
+        elif hap == 2:
+            query_rec = query_fasta_file.fetch(sv.query_name_hap2)
+            ref_start = sv.ref_start_best_hap2
+            ref_end = sv.ref_end_best_hap2
+            query_start = sv.query_start_best_hap2
+            query_end = sv.query_end_best_hap2
+            neg_strand = sv.neg_strand_hap2
+            query_int_start = sv.query_int_start2
+            query_int_end = sv.query_int_end2
+
+        if query_start >= len(query_rec) or query_end >= len(query_rec):
+            message = "bad_query_pos"
+            #write_err(output_file_name, message, g)
+            continue
+
+        #case 1: DEL
+        if sv.sv_type == "DEL":
+            #query and ref seq fragment
+            if not (sv.alt_len > abn_len):
+                query_frag = query_rec[query_start:query_end]
+                ref_frag = ref_rec[ref_start:ref_end]
+                #TODO: this is for DEL
+                #TODO: check +-1
+                ref_afterSV_frag1 = ref_rec[ref_start:sv.sv_pos]
+                ref_afterSV_frag2 = ref_rec[sv.sv_stop:ref_end]
+
+                #alignment starts here
+                if neg_strand:
+                    seq = Seq(query_frag)
+                    query_frag = seq.reverse_complement()
+                    #query_frag = query_frag.reverse_complement()
+
+                #get to upper case
+                ref_frag = ref_frag.upper()
+                ref_afterSV_frag1 = ref_afterSV_frag1.upper()
+                ref_afterSV_frag2 = ref_afterSV_frag2.upper()
+                query_frag = query_frag.upper()
+
+                #TODO: find appropriate alignment parameters
+                #paras: match, mismatch, open gap, extend gap
+                alignment_beforeSV, alignment_afterSV = align_before_after(output_dir, sv, str(query_frag), str(ref_frag), str(ref_afterSV_frag1) + str(ref_afterSV_frag2))
+            else:
+##############################################   #######################   #######################   
+#######################   #######################   #######################   #######################   
+#######################   #######################   #######################   #######################  
+# put alt seq to substitute ref seq for abn DEL
+                query_frag = query_rec[query_start:query_end]
+                ref_frag = ref_rec[ref_start:ref_end]
+                #TODO: this is for DEL
+                #TODO: check +-1
+                ref_afterSV_frag1 = ref_rec[ref_start:sv.sv_pos]
+                ref_afterSV_frag2 = ref_rec[sv.sv_stop:ref_end]
+                
+                alt_seq = sv.alt_seq
+
+                #alignment starts here
+                if neg_strand:
+                    seq = Seq(query_frag)
+                    query_frag = seq.reverse_complement()
+                    seq = Seq(alt_seq)
+                    alt_seq = seq.reverse_complement()
+
+                #get to upper case
+                ref_frag = ref_frag.upper()
+                ref_afterSV_frag1 = ref_afterSV_frag1.upper()
+                ref_afterSV_frag2 = ref_afterSV_frag2.upper()
+                query_frag = query_frag.upper()
+                alt_seq = alt_seq.upper()
+
+                #TODO: find appropriate alignment parameters
+                #paras: match, mismatch, open gap, extend gap
+                alignment_beforeSV, alignment_afterSV = align_before_after_abn(output_dir, sv, str(query_frag), str(ref_frag), str(query_frag), str(ref_afterSV_frag1) + str(alt_seq) + str(ref_afterSV_frag2))
+##############################################   #######################   #######################   
+#######################   #######################   #######################   #######################   
+#######################   #######################   #######################   #######################  
+# using flanking seq for abn DEL                
+#                 flanking = 100
+#                 query_frag = query_rec[query_start - flanking:query_end + flanking]
+#                 ref_frag = ref_rec[ref_start - flanking:ref_end + flanking]
+#                 #TODO: this is for DEL
+#                 #TODO: check +-1
+#                 ref_afterSV_frag1 = ref_rec[ref_start - flanking:ref_start]
+#                 ref_afterSV_frag2 = ref_rec[ref_end:ref_end + flanking]
+                
+#                 query_afterSV_frag1 = query_rec[query_start - flanking:query_start]
+#                 query_afterSV_frag2 = query_rec[query_end:query_end + flanking]
+                
+#                 query_afterSV = str(query_afterSV_frag1) + str(query_afterSV_frag2)
+
+#                 #alignment starts here
+#                 if neg_strand:
+#                     seq = Seq(query_frag)
+#                     query_frag = seq.reverse_complement()
+#                     #query_frag = query_frag.reverse_complement()
+#                     seq = Seq(query_afterSV)
+#                     query_afterSV = seq.reverse_complement()
+
+#                 #get to upper case
+#                 ref_frag = ref_frag.upper()
+#                 ref_afterSV_frag1 = ref_afterSV_frag1.upper()
+#                 ref_afterSV_frag2 = ref_afterSV_frag2.upper()
+#                 query_frag = query_frag.upper()
+#                 query_afterSV = query_afterSV.upper()
+                
+#                 #test
+#                 print(str(query_afterSV))
+#                 print(str(ref_afterSV_frag1) + str(ref_afterSV_frag2))
+
+#                 #TODO: find appropriate alignment parameters
+#                 #paras: match, mismatch, open gap, extend gap
+#                 alignment_beforeSV, alignment_afterSV = align_before_after_abn(output_dir, sv, str(query_frag), str(ref_frag), str(query_afterSV), str(ref_afterSV_frag1) + str(ref_afterSV_frag2))
+                
+#                 alignment_beforeSV = alignment_beforeSV / (len(str(query_frag)) + len(str(ref_frag)))
+#                 alignment_afterSV = alignment_afterSV / (len(str(query_afterSV)) + len(str(ref_afterSV_frag1) + str(ref_afterSV_frag2)))
+##############################################   #######################   #######################   
+#######################   #######################   #######################   #######################   
+#######################   #######################   #######################   #######################  
+# old version for abn DEL
+#                 query_frag = query_rec[query_start:query_end]
+#                 ref_frag = ref_rec[ref_start:ref_end]
+#                 #TODO: this is for DEL
+#                 #TODO: check +-1
+#                 ref_afterSV_frag1 = ref_rec[ref_start:sv.sv_pos]
+#                 ref_afterSV_frag2 = ref_rec[sv.sv_stop:ref_end]
+                
+#                 query_afterSV_frag1 = query_rec[query_start:query_int_start]
+#                 query_afterSV_frag2 = query_rec[query_int_end:query_end]
+                
+#                 query_afterSV = str(query_afterSV_frag1) + str(query_afterSV_frag2)
+
+#                 #alignment starts here
+#                 if neg_strand:
+#                     seq = Seq(query_frag)
+#                     query_frag = seq.reverse_complement()
+#                     #query_frag = query_frag.reverse_complement()
+#                     seq = Seq(query_afterSV)
+#                     query_afterSV = seq.reverse_complement()
+
+#                 #get to upper case
+#                 ref_frag = ref_frag.upper()
+#                 ref_afterSV_frag1 = ref_afterSV_frag1.upper()
+#                 ref_afterSV_frag2 = ref_afterSV_frag2.upper()
+#                 query_frag = query_frag.upper()
+#                 query_afterSV = query_afterSV.upper()
+
+#                 #TODO: find appropriate alignment parameters
+#                 #paras: match, mismatch, open gap, extend gap
+#                 alignment_beforeSV, alignment_afterSV = align_before_after_abn(output_dir, sv, str(query_frag), str(ref_frag), str(query_afterSV), str(ref_afterSV_frag1) + str(ref_afterSV_frag2))
+##############################################   #######################   #######################   
+#######################   #######################   #######################   #######################   
+#######################   #######################   #######################   #######################   
+        #case 2: INS
+        elif sv.sv_type in ["INS"]:
+            #query and ref seq fragment
+            query_frag = query_rec[query_start:query_end]
+            ref_frag = ref_rec[ref_start:ref_end]
+            
+            if seq_resolved:
+                ins_seq = sv.ins_seq
+                ref_afterSV_frag1 = ref_rec[ref_start:sv.sv_pos]
+                ref_afterSV_frag2 = ref_rec[sv.sv_stop:ref_end]
+
+                
+                if neg_strand:
+                    seq = Seq(query_frag)
+                    query_frag = seq.reverse_complement()
+#                     seq = Seq(ins_seq)
+#                     ins_seq = seq.reverse_complement()
+                
+                #get to upper case
+                ref_frag = ref_frag.upper()
+                ref_afterSV_frag1 = ref_afterSV_frag1.upper()
+                ref_afterSV_frag2 = ref_afterSV_frag2.upper()
+                query_frag = query_frag.upper()
+                ins_seq = ins_seq.upper()
+                
+                alignment_beforeSV, alignment_afterSV = align_before_after(output_dir, sv, str(query_frag), str(ref_frag), str(ref_afterSV_frag1) + ins_seq + str(ref_afterSV_frag2))
+            else:
+                #for INS, not using relative score
+                alignment_beforeSV = 1
+                alignment_afterSV = 1
+
+        #case 3: INV
+        elif sv.sv_type == "INV":
+            #query and ref seq fragment
+            query_frag = query_rec[query_start:query_end]
+            ref_frag = ref_rec[ref_start:ref_end]
+            ref_afterSV_frag1 = ref_rec[ref_start:sv.sv_pos]
+            ref_afterSV_frag2 = ref_rec[sv.sv_stop:ref_end]
+            ref_inv_seq = ref_rec[sv.sv_pos:sv.sv_stop]
+
+            #alignment starts here
+            if neg_strand:
+                seq = Seq(query_frag)
+                query_frag = seq.reverse_complement()
+                #query_frag = query_frag.reverse_complement()
+
+            #reversse and complement
+            inv_seq = Seq(ref_inv_seq)
+            ref_inv_seq = inv_seq.reverse_complement()
+            #ref_inv_seq = inversion_seq(str(ref_inv_seq))
+
+            #get to upper case
+            ref_frag = ref_frag.upper()
+            query_frag = query_frag.upper()
+            ref_inv_seq = ref_inv_seq.upper()
+            ref_afterSV_frag1 = ref_afterSV_frag1.upper()
+            ref_afterSV_frag2 = ref_afterSV_frag2.upper()
+            
+            alignment_beforeSV, alignment_afterSV = align_before_after(output_dir, sv, str(query_frag), str(ref_frag), str(ref_afterSV_frag1) + str(ref_inv_seq) + str(ref_afterSV_frag2))
+
+#             #within length limit
+#             if not sv.is_third_fil:
+#                 #TODO: find a appropriate alignment parameters
+#                 #paras: match, mismatch, open gap, extend gap
+#                 aligner = Align.PairwiseAligner()
+#                 aligner.mode = 'global'
+#                 #aligner.mode = 'local'
+#                 aligner.match_score = 1
+#                 aligner.mismatch_score = -1
+#                 aligner.open_gap_score = -1
+#                 aligner.extend_gap_score = -0.5
+#                 #aligner.score_only = True
+#                 alignment_beforeSV = aligner.score(str(query_frag), str(ref_frag))
+#                 alignment_afterSV = aligner.score(str(query_frag), str(ref_afterSV_frag1) + str(ref_inv_seq)
+#                                         + str(ref_afterSV_frag2))
+        
+        #case 4: tandem dup
+        elif sv.sv_type in ['DUP:TANDEM', 'DUP']:
+            #query and ref seq fragment
+            query_frag = query_rec[query_start:query_end]
+            ref_frag = ref_rec[ref_start:ref_end]
+            #TODO: this is for DEL
+            #TODO: check +-1
+            ref_afterSV_frag1 = ref_rec[ref_start:sv.sv_stop]
+            ref_afterSV_frag2 = ref_rec[sv.sv_stop:ref_end]
+            dup_seq = ref_rec[sv.sv_pos:sv.sv_stop]
+
+            #alignment starts here
+
+            if neg_strand:
+                seq = Seq(query_frag)
+                query_frag = seq.reverse_complement()
+                #query_frag = query_frag.reverse_complement()
+
+            #get to upper case
+            ref_frag = ref_frag.upper()
+            ref_afterSV_frag1 = ref_afterSV_frag1.upper()
+            ref_afterSV_frag2 = ref_afterSV_frag2.upper()
+            dup_seq = dup_seq.upper()
+            query_frag = query_frag.upper()
+            
+            alignment_beforeSV, alignment_afterSV = align_before_after(output_dir, sv, str(query_frag), str(ref_frag), str(ref_afterSV_frag1) + str(dup_seq) + str(ref_afterSV_frag2))
+
+#             #within length limit
+#             if not sv.is_third_fil:
+#                 #TODO: find a appropriate alignment parameters
+#                 #paras: match, mismatch, open gap, extend gap
+#                 aligner = Align.PairwiseAligner()
+#                 aligner.mode = 'global'
+#                 #aligner.mode = 'local'
+#                 aligner.match_score = 1
+#                 aligner.mismatch_score = -1
+#                 aligner.open_gap_score = -1
+#                 aligner.extend_gap_score = -0.5
+#                 #aligner.score_only = True
+#                 alignment_beforeSV = aligner.score(str(query_frag), str(ref_frag))
+#                 alignment_afterSV = aligner.score(str(query_frag), str(ref_afterSV_frag1) + str(dup_seq) + str(ref_afterSV_frag2))
+
+        if hap == 1:
+            sv.analyzed_hap1 = True
+            sv.score_before_hap1 = alignment_beforeSV
+            sv.score_after_hap1 = alignment_afterSV
+            sv.len_query_hap1 = len(query_frag)
+            sv.len_ref_hap1 = len(ref_frag)
+        elif hap == 2:
+            sv.analyzed_hap2 = True
+            sv.score_before_hap2 = alignment_beforeSV
+            sv.score_after_hap2 = alignment_afterSV
+            sv.len_query_hap2 = len(query_frag)
+            sv.len_ref_hap2 = len(ref_frag)
+            
+        write_vali_info(g, sv, hap)
+    g.close()
 
 def main():
     #get command line input
