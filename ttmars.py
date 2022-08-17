@@ -89,15 +89,15 @@ parser.add_argument("-d",
 #for combining results
 parser.add_argument("-v",
                     "--vcf_out",
-                    help="output results as vcf files, must be used together with -f/--vcf_file",
+                    help="output results as vcf files",
                     action="store_true")
 parser.add_argument("-f",
                     "--false_neg",
-                    help="output false negative, must be used together with -t/--truth_file and -f/--vcf_file",
+                    help="output false negative, must be used together with -t/--truth_file",
                     action="store_true")
 parser.add_argument("-t",
                     "--truth_file",
-                    help="input truth vcf file, must be used together with -n/--false_neg")
+                    help="input truth vcf file, must be used together with -f/--false_neg")
 
 args = parser.parse_args()
 
