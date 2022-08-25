@@ -27,24 +27,26 @@ tr_file=hg38_tandem_repeats.bed
 #1: if male sample; 2: if female sample
 num_X_chr=1
 
-python ttmars.py "$output_dir" "$centro_file" "$files_dir"/assem1_non_cov_regions.bed "$files_dir"/assem2_non_cov_regions.bed "$vcf_file" "$reference" "$asm_h1" "$asm_h2" "$files_dir"/lo_pos_assem1_result_compressed.bed "$files_dir"/lo_pos_assem2_result_compressed.bed "$files_dir"/lo_pos_assem1_0_result_compressed.bed "$files_dir"/lo_pos_assem2_0_result_compressed.bed "$tr_file" 1000 "$num_X_chr" -s -g -w -d -i -v
+python ttmars.py "$output_dir" "$files_dir" "$centro_file" "$vcf_file" "$reference" "$asm_dir"/h1.fa "$asm_dir"/h2.fa "$tr_file" "$num_X_chr" -s -g -w -d -i -v
 
 # positional arguments:
 #   output_dir            output directory
-#   centromere_file       centromere file
-#   assem1_non_cov_regions_file
-#                         Regions that are not covered on hap1
-#   assem2_non_cov_regions_file
-#                         Regions that are not covered on hap2
+#   files_dir             input directory that stores files used in tt-mars for the current sample
+    #   Should include:
+    #   assem1_non_cov_regions_file
+    #                         Regions that are not covered on hap1
+    #   assem2_non_cov_regions_file
+    #                         Regions that are not covered on hap2
+    #   liftover_file1        liftover file hap1
+    #   liftover_file2        liftover file hap2
+    #   liftover_file1_0      liftover file hap1 asm to ref
+    #   liftover_file2_0      liftover file hap2 asm to ref    
+#   centromere_file       centromere file, default is provided by tt-mars
 #   vcf_file              input vcf file
 #   ref_file              reference file
 #   query_file1           assembly fasta file hap1
 #   query_file2           assembly fasta file hap2
-#   liftover_file1        liftover file hap1
-#   liftover_file2        liftover file hap2
-#   liftover_file1_0      liftover file hap1 asm to ref
-#   liftover_file2_0      liftover file hap2 asm to ref
-#   tandem_file           tandem repeats regions
+#   tandem_file           tandem repeats regions, default is provided by tt-mars
 #   region_len_m          region_len_m
 #   {1,2}                 male sample 1, female sample 2
 

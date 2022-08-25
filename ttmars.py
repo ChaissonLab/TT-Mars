@@ -8,12 +8,14 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument("output_dir",
                     help="output directory")
+parser.add_argument("files_dir",
+                    help="input files directory")
 parser.add_argument("centromere_file",
                     help="centromere file")
-parser.add_argument("assem1_non_cov_regions_file",
-                    help="Regions that are not covered on hap1")
-parser.add_argument("assem2_non_cov_regions_file",
-                    help="Regions that are not covered on hap2")
+# parser.add_argument("assem1_non_cov_regions_file",
+#                     help="Regions that are not covered on hap1")
+# parser.add_argument("assem2_non_cov_regions_file",
+#                     help="Regions that are not covered on hap2")
 parser.add_argument("vcf_file",
                     help="input vcf file")
 parser.add_argument("ref_file",
@@ -22,25 +24,25 @@ parser.add_argument("query_file1",
                     help="assembly fasta file hap1")
 parser.add_argument("query_file2",
                     help="assembly fasta file hap2")
-parser.add_argument("liftover_file1",
-                    help="liftover file hap1")
-parser.add_argument("liftover_file2",
-                    help="liftover file hap2")
+# parser.add_argument("liftover_file1",
+#                     help="liftover file hap1")
+# parser.add_argument("liftover_file2",
+#                     help="liftover file hap2")
 
 #needed in interspersed dup validation
-parser.add_argument("liftover_file1_0",
-                    help="liftover file hap1 asm to ref")
-parser.add_argument("liftover_file2_0",
-                    help="liftover file hap2 asm to ref")
+# parser.add_argument("liftover_file1_0",
+#                     help="liftover file hap1 asm to ref")
+# parser.add_argument("liftover_file2_0",
+#                     help="liftover file hap2 asm to ref")
 
 parser.add_argument("tandem_file",
                     help="tandem repeats regions")
 
 ##########################################################
 ##########################################################
-parser.add_argument("region_len_m",
-                    type=int,
-                    help="region_len_m")
+# parser.add_argument("region_len_m",
+#                     type=int,
+#                     help="region_len_m")
 
 parser.add_argument("no_X_chr",
                     choices=[1, 2],
@@ -139,29 +141,31 @@ sys.path.insert(0, '../')
 ##########################################################
 ##########################################################
 
-
 output_dir = args.output_dir + "/"
 # if_hg38_input = args.if_hg38_input
 centromere_file = args.centromere_file
+#input files directory
+files_dir = args.files_dir + "/"
 #assembly bam files
-assem1_non_cov_regions_file = args.assem1_non_cov_regions_file
-assem2_non_cov_regions_file = args.assem2_non_cov_regions_file
-#avg_read_depth = sys.argv[6]
-#read_bam_file = sys.argv[6]
+# assem1_non_cov_regions_file = args.assem1_non_cov_regions_file
+# assem2_non_cov_regions_file = args.assem2_non_cov_regions_file
+assem1_non_cov_regions_file = files_dir + "assem1_non_cov_regions.bed"
+assem2_non_cov_regions_file = files_dir + "assem2_non_cov_regions.bed"
 vcf_file = args.vcf_file
 #ref fasta file
 ref_file = args.ref_file
 #assembly fasta files
 query_file1 = args.query_file1
 query_file2 = args.query_file2
-liftover_file1 = args.liftover_file1
-liftover_file2 = args.liftover_file2
+# liftover_file1 = args.liftover_file1
+# liftover_file2 = args.liftover_file2
+liftover_file1 = files_dir + "lo_pos_assem1_result_compressed.bed"
+liftover_file2 = files_dir + "lo_pos_assem2_result_compressed.bed"
 tandem_file = args.tandem_file
-# if_passonly_input = args.if_passonly_input
-# seq_resolved_input = args.seq_resolved_input
-# wrong_len_input = args.wrong_len_input
-liftover_file1_0 = args.liftover_file1_0
-liftover_file2_0 = args.liftover_file2_0
+# liftover_file1_0 = args.liftover_file1_0
+# liftover_file2_0 = args.liftover_file2_0
+liftover_file1_0 = files_dir + "lo_pos_assem1_0_result_compressed.bed"
+liftover_file2_0 = files_dir + "lo_pos_assem2_0_result_compressed.bed"
 
 ##########################################################
 ##########################################################
@@ -213,8 +217,8 @@ dup_memory_min = 10
 #max length of allowed interspersed DUP
 reg_dup_upper_len = 10000000
 #flanking regions for searching
-# region_len_m = 1000
-region_len_m = int(args.region_len_m)
+region_len_m = 1000
+# region_len_m = int(args.region_len_m)
 
 #valid types
 valid_types = ['DEL', 'INS', 'INV', 'DUP:TANDEM', 'DUP']

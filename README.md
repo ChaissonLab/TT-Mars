@@ -13,40 +13,39 @@ TT-Mars: S**t**ructural Varian**t**s Assess**m**ent B**a**sed on Haplotype-**r**
 
 The main program: run `python ttmars.py -h` for help.
 
-`python ttmars.py output_dir centro_file files_dir/assem1_non_cov_regions.bed files_dir/assem2_non_cov_regions.bed vcf_file reference asm_h1 asm_h2 files_dir/lo_pos_assem1_result_compressed.bed files_dir/lo_pos_assem2_result_compressed.bed files_dir/lo_pos_assem1_0_result_compressed.bed files_dir/lo_pos_assem2_0_result_compressed.bed tr_file searching_interval(1000) num_X_chr`
+`python ttmars.py output_dir files_dir centro_file vcf_file reference asm_h1 asm_h2 tr_file num_X_chr`
 
 ## Positional arguments
 
-1. `output_dir`: Output directory.
-2. `centro_file`: provided centromere file. 
-3. `tr_file`: provided tandem repeats file.
-4. `vcf_file`: callset file callset.vcf(.gz)  
-5. `reference`: referemce file reference_genome.fasta.
-6. `asm_h1/2`: assembly files assembly1/2.fa, can be downloaded by `download_asm.sh`.
-7. `assem1_non_cov_regions.bed`, `assem2_non_cov_regions.bed`, `lo_pos_assem1_result_compressed.bed`, `lo_pos_assem2_result_compressed.bed`, `lo_pos_assem1_0_result_compressed.bed`, `lo_pos_assem2_0_result_compressed.bed`: required files, downloaded to `./ttmars_files`.  
-8. `searching_interval(1000)`: the flanking region where TT-Mars searches for the best interval, 1000 is the recommended value.  
+1. `output_dir`: Output directory.  
+2. `files_dir`: Input files directory. `./ttmars_files/sample_name`. The directory where you store required files after running `dowaload_files.sh`.  
+3. `centro_file`: provided centromere file.  
+4. `vcf_file`: callset file callset.vcf(.gz).  
+5. `reference`: referemce file reference_genome.fasta.  
+6. `asm_h1`: assembly files assembly1.fa, which were downloaded after running `download_asm.sh`.  
+7. `asm_h2`: assembly files assembly2.fa, which were downloaded after running `download_asm.sh`.  
+8. `tr_file`: provided tandem repeats file. 
 9. `num_X_chr`: if male sample: 1; if female sample: 2.
 
 ## Optional arguments
 
 `-n/--not_hg38`: if reference is NOT hg38/chm13 (hg19).  
-`-p/--passonly`: if consider PASS calls only.   
+`-p/--passonly`: if consider PASS calls only.  
 `-s/--seq_resolved`: if consider sequence resolved calls.  
 `-w/--wrong_len`: if count wrong length calls as True.  
 `-g/--gt_vali`: conduct genotype validation.  
-`-i/--gt_info`: index with GT info. (For phased callsets)
-`-d/--phased `: take phased information. (For phased callsets)
-
-`-v/--vcf_out`: output results as vcf files (tp (true positive), fp (false positive) and na). 
+`-i/--gt_info`: index with GT info. (For phased callsets)  
+`-d/--phased `: take phased information. (For phased callsets)  
+`-v/--vcf_out`: output results as vcf files (tp (true positive), fp (false positive) and na).  
 `-f/--false_neg`: output recall, must be used together with `-t/--truth_file`.  
 `-t/--truth_file`: input truth vcf file, must be used together with `-f/--false_neg`.  
 
 ## Example Output
 
 ttmars_combined_res.txt:  
-|chr| start| end| type| relative length| relative score| validation result| genotype match|
-| :----: | :----: |  :----: | :----: | :----: | :----: | :----: |:----: | 
-|chr1|	893792|	893827|	DEL|	1.03|	3.18|	True| True|
+|SV index| relative length| relative score| validation result| chr| start| end| Type| Genotype Match|
+| :----: | :----: |  :----: | :----: | :----: | :----: | :----: |:----: | :----: |
+|0|	1.0|	3.48|	True|	chr1|	249912|	249912| INS| True|
 
 ## Accompanying Resources
 
