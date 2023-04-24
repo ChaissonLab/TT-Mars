@@ -5,7 +5,7 @@ TT-Mars: S**t**ructural Varian**t**s Assess**m**ent B**a**sed on Haplotype-**r**
 ## Usage
 
 0. Clone TT-Mars from github and `cd TT-Mars`. Python >= 3.8 is preferred.
-1. Create environment and activate: `conda create -n ttmars` and `conda activate ttmars_test`.
+1. Create environment and activate: `conda create -n ttmars` and `conda activate ttmars`.
 2. Run `dowaload_files.sh` to download required files to `./ttmars_files`.
 3. Run `download_asm.sh` to download assembly files of 10 samples from HGSVC.
 4. Install packages: `conda install -c bioconda pysam`, `conda install -c anaconda numpy`, `conda install -c bioconda mappy`, `conda install -c conda-forge biopython`, `conda install -c bioconda pybedtools`.
