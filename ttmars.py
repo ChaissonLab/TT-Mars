@@ -827,7 +827,7 @@ def main():
     combine.combine_output()
     
     #remove unnecessary files
-#     combine.remove_files()
+    combine.remove_files()
     
 if __name__ == "__main__":
     main()
