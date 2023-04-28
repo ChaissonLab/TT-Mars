@@ -209,7 +209,7 @@ chr_len = [250000000, 244000000, 202000000, 194000000, 183000000,
             48200000, 51400000, 157000000, 62500000]
 
 #max/min length of allowed SV not DUP
-memory_limit = 9999
+memory_limit = 99999
 memory_min = 10
 #max length of allowed DUP
 dup_memory_limit = 50000
